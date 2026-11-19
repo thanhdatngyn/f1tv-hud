@@ -41,6 +41,7 @@ struct Keys {
     uintptr_t badge_names = 0;       // render badge source names, image + 0x5612e60 (char *[3])
     uintptr_t badge_none = 0;        // optional encoded default render-badge ID
     uintptr_t customisation = 0;     // the player customisation system's pointer, image + 0x6064cb8 (log)
+    uintptr_t progress = 0;          // VehicleProgressSystem registry key fallback when [g_Game_Manager]+0x2d0 differs
 };
 constexpr uintptr_t kRvaPit = 0x60fd708;
 Keys keys_from_image(uintptr_t image_base, uintptr_t game_manager);
@@ -359,7 +360,7 @@ private:
     Keys k_;
     Snapshot s_;
     Component c_results_, c_timing_, c_pit_, c_sc_, c_log_, c_s1_, c_tyres_, c_zones_, c_red_, c_mode_, c_teams_,
-        c_laps_;
+        c_laps_, c_progress_;
     double due_[kJobs] = {};
     uint32_t generation_ = ~0u;
     uint32_t session_ = ~0u;

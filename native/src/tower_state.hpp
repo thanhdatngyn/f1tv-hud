@@ -280,7 +280,8 @@ constexpr unsigned my_team_kind = 1;
 // part after the prefix as the car's key (render = true).
 namespace render_badge {
 constexpr uintptr_t entrant_badge = 0x68;     // u32 in the entrant record
-constexpr uintptr_t names = 0x5614e60;        // image rva: char *[max_source + 1]
+constexpr uintptr_t names = 0x5614e60;        // image rva (Steam 26566308): char *[max_source + 1]
+constexpr uintptr_t names_ea = 0x57282c0;     // image rva (EA App 1.0.145): char *[max_source + 1]
 constexpr unsigned max_source = 2;
 constexpr uint32_t none_add = 0x5874f662;
 constexpr uintptr_t customisation = 0x6066cb8; // image rva: the player customisation system's singleton pointer

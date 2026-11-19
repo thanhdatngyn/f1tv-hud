@@ -698,14 +698,20 @@ void Reader::job_pitlaps(double now, const Frame &f)
             }
         }
     }
-    // VehicleProgressSystem [[g_Game_Manager]+0x2d0]: entries [sys+0x38, sys+0x40) by vehicle id; lap counter
-    // = u16 +0x38 ^ u16 +0x40 (the provider's progress_entry)
-    uintptr_t mgr = 0, sys = 0, v[2];
+    // VehicleProgressSystem [[g_Game_Manager]+0x2d0], or registry(progress) fallback: entries [sys+0x38, sys+0x40)
+    // by vehicle id; lap counter = u16 +0x38 ^ u16 +0x40 (the provider's progress_entry)
+    uintptr_t mgr = 0, sys = 0, v[2] = {};
     size_t n = 0;
     uintptr_t ptr[kMaxEntries];
     s_.found_progress = false;
-    if (k_.game_manager && get(k_.game_manager, mgr) && mgr && get(mgr + 0x2d0, sys) && sys &&
-        rd(sys + 0x38, v, sizeof v) && vec_ok(v[0], v[1], 8, kMaxEntries, n) && n && rd(v[0], ptr, n * 8)) {
+    auto read_prog_vec = [&](uintptr_t candidate) -> bool {
+        return candidate && !(candidate & 7) && rd(candidate + 0x38, v, sizeof v) &&
+               vec_ok(v[0], v[1], 8, kMaxEntries, n) && n && rd(v[0], ptr, n * 8);
+    };
+    const bool prog_ok = (k_.game_manager && get(k_.game_manager, mgr) && mgr && get(mgr + 0x2d0, sys) &&
+                          read_prog_vec(sys)) ||
+                         (k_.progress && read_prog_vec(find(c_progress_, k_.progress, now)));
+    if (prog_ok) {
         s_.found_progress = true;
         for (int vid = 0; vid < kCars && size_t(vid) < n; ++vid) {
             uint8_t b[0x10];

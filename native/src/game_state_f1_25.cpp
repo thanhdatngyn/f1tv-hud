@@ -25,8 +25,10 @@ namespace {
 
 namespace mem = swofty::mem;
 
-constexpr uint32_t kBuildTimestamp = 1794312636; // F1_25.exe, Steam, sha256 46009bd31f49d93…
-constexpr uint32_t kBuildImageSize = 0x18434000;
+constexpr uint32_t kSteamBuildTimestamp = 1794312636; // F1_25.exe, Steam 26566308, sha256 46009bd31f49d93…
+constexpr uint32_t kSteamBuildImageSize = 0x18434000;
+constexpr uint32_t kEaBuildTimestamp = 1794315435; // F1_25.exe, EA App 1.0.145, sha256 8361a266d7aa1f43…
+constexpr uint32_t kEaBuildImageSize = 0x1615e000;
 constexpr double kScanPeriod = 0.1; // s: every car in the table re-read and the running order rebuilt (10 Hz)
 constexpr double kNamePeriod = 1.0; // s: the track name re-read
 constexpr double kSearchPeriod = 1.0; // s: the component registry searched again for a missing results system
@@ -100,7 +102,7 @@ constexpr uintptr_t angle = 0xe8; // CarObfFloat, rad                           
 namespace ers {
 constexpr uintptr_t max_deploy = 0x28;  // f32 W (2026: 350e3)                                       KB L2
 constexpr uintptr_t capacity = 0x60;    // f32 J (4e6)                                               KB L2
-constexpr uintptr_t live_lo = 0x19c8, live_hi = 0x1a6c;
+constexpr uintptr_t live_lo = 0x19c8, live_hi = 0x1a70;
 constexpr uintptr_t harvest_lap = 0x19c8; // f32 J harvested by the MGU-K this lap                   KB L2
 constexpr uintptr_t deploy_lap = 0x19d0;  // f32 J deployed this lap                                  KB L2
 constexpr uintptr_t energy = 0x19f0;      // f32 J in the store                                      KB L3
@@ -109,7 +111,9 @@ constexpr uintptr_t harvest_k = 0x1a00;   // f32 W                              
 constexpr uintptr_t harvest_h = 0x1a04;   // f32 W                                                   KB L2
 constexpr uintptr_t deploy = 0x1a14;      // f32 W                                                   KB L2
 constexpr uintptr_t flags = 0x1a60;       // u8[4], meaning unconfirmed (logged only)                 L1
-constexpr uintptr_t mode = 0x1a68;        // i32 0 None, 1 Medium, 2 Overtake, 3 Hotlap              KB L3
+constexpr uintptr_t flags_ea = 0x1a64;    // EA App 1.0.145 (+4 shift after deploy)
+constexpr uintptr_t mode = 0x1a68;        // i32 0 None, 1 Medium, 2 Overtake/Boost, 3 Hotlap        KB L3
+constexpr uintptr_t mode_ea = 0x1a6c;     // EA App 1.0.145 (verified in-game: 0->1->2->1 on Boost)
 } // namespace ers
 
 // VehicleProgressSystem entries (static-validation.md H1/H2; XOR pairs = value ^ key 8 bytes later). Lap
@@ -310,7 +314,8 @@ struct F1_25Provider::Impl {
         size_t slot = ~size_t(0);
         double last_search = -1e9;
     };
-    Component results, spectator;
+    Component results, spectator, progress_comp;
+    bool ea_build = false;
     // who drives which car, from the last scan
     int ctrl_hits = -1, ctrl_vid = -1, spect_vid = -1;
     SpectateState spect; // the spectator director as read at the last scan (on: decided per frame)
@@ -344,19 +349,26 @@ struct F1_25Provider::Impl {
     }
 
     // VehicleProgressSystem's per-car entries: [begin, begin + n) pointers indexed by vehicle id.
-    bool progress_table(uintptr_t &begin, size_t &n) const
+    bool progress_table(double now, uintptr_t &begin, size_t &n)
     {
         static_assert(progress::vec_end == progress::vec_begin + sizeof(uintptr_t));
-        uintptr_t mgr = 0, sys = 0, be[2] = {};
-        if (!rd(sym.game_manager, mgr) || !mgr || !rd(mgr + progress::from_manager, sys) || !sys ||
-            !copy(sys + progress::vec_begin, be, sizeof be))
-            return false;
-        const uintptr_t b = be[0], e = be[1];
-        if (!b || e < b || (e - b) % sizeof(uintptr_t) || (e - b) / sizeof(uintptr_t) > 64)
-            return false;
-        begin = b;
-        n = (e - b) / sizeof(uintptr_t);
-        return true;
+        auto try_sys = [&](uintptr_t sys) -> bool {
+            uintptr_t be[2] = {};
+            if (!sys || (sys & 7) || !copy(sys + progress::vec_begin, be, sizeof be))
+                return false;
+            const uintptr_t b = be[0], e = be[1];
+            if (!b || (b & 7) || e <= b || (e - b) % sizeof(uintptr_t) || (e - b) / sizeof(uintptr_t) > 64)
+                return false;
+            begin = b;
+            n = (e - b) / sizeof(uintptr_t);
+            return true;
+        };
+        uintptr_t mgr = 0, sys = 0;
+        if (rd(sym.game_manager, mgr) && mgr && rd(mgr + progress::from_manager, sys) && try_sys(sys))
+            return true;
+        if (sym.progress_key && find_component(progress_comp, sym.progress_key, now) && try_sys(progress_comp.value))
+            return true;
+        return false;
     }
 
     struct Progress {
@@ -591,7 +603,7 @@ struct F1_25Provider::Impl {
         uintptr_t begin = 0;
         size_t entries = 0;
         uintptr_t ptrs[64];
-        if (!n_cars || !progress_table(begin, entries) || !entries || !copy(begin, ptrs, entries * sizeof(uintptr_t)))
+        if (!n_cars || !progress_table(now, begin, entries) || !entries || !copy(begin, ptrs, entries * sizeof(uintptr_t)))
             return;
         for (int i = 0; i < n_cars; ++i) {
             Progress pr;
@@ -758,7 +770,7 @@ struct F1_25Provider::Impl {
         uintptr_t begin = 0, linked = 0;
         size_t entries = 0;
         Progress pr;
-        if (progress_table(begin, entries) && progress_of(begin, entries, cars[sub].id, pr)) {
+        if (progress_table(now, begin, entries) && progress_of(begin, entries, cars[sub].id, pr)) {
             // the entry's link back to the car is logged, not required, until a drive confirms it (T8)
             raw.progress_link = pr.vehicle && !(pr.vehicle & 7) && rd(pr.vehicle + progress::vehicle_car, linked) &&
                                 linked == cars[sub].ptr;
@@ -942,7 +954,7 @@ struct F1_25Provider::Impl {
                 const float hk = field<float>(b, ers::live_lo, ers::harvest_k);
                 const float hh = field<float>(b, ers::live_lo, ers::harvest_h);
                 const float dp = field<float>(b, ers::live_lo, ers::deploy);
-                const int32_t mode = field<int32_t>(b, ers::live_lo, ers::mode);
+                const int32_t mode = field<int32_t>(b, ers::live_lo, ea_build ? ers::mode_ea : ers::mode);
                 const float hl = field<float>(b, ers::live_lo, ers::harvest_lap);
                 const float dl = field<float>(b, ers::live_lo, ers::deploy_lap);
                 const float ll = field<float>(b, ers::live_lo, ers::lap_limit);
@@ -966,7 +978,8 @@ struct F1_25Provider::Impl {
                     e.deployed_lap_j = dl;
                     e.harvest_limit_lap_j = ll;
                 }
-                std::memcpy(raw.ers_flags, b + (ers::flags - ers::live_lo), sizeof raw.ers_flags);
+                std::memcpy(raw.ers_flags, b + ((ea_build ? ers::flags_ea : ers::flags) - ers::live_lo),
+                            sizeof raw.ers_flags);
             }
             if (rd(es + ers::max_deploy, cfg[0]) && within(cfg[0], 1.0e4f, 2.0e6f)) {
                 e.max_deploy_ok = true;
@@ -983,6 +996,7 @@ struct F1_25Provider::Impl {
 F1_25Provider::F1_25Provider(const F1_25Symbols &symbols, bool build_ok) : impl_(std::make_unique<Impl>())
 {
     impl_->sym = symbols;
+    impl_->ea_build = f1_25_detect_build() == F1_25Build::ea_1_0_145;
     impl_->ok = build_ok && symbols.vehicle_table && symbols.vehicle_count && symbols.game_manager &&
                 symbols.track_length && symbols.session_type && symbols.vt_car_systems;
 }
@@ -991,7 +1005,13 @@ F1_25Provider::~F1_25Provider() = default;
 
 const char *F1_25Provider::describe() const
 {
-    return impl_->ok ? "F1 25 Steam 26566308 (in-process memory)" : "F1 25 (unsupported build: in-process reads disabled)";
+    if (!impl_->ok)
+        return "F1 25 (unsupported build: in-process reads disabled)";
+    switch (f1_25_detect_build()) {
+    case F1_25Build::ea_1_0_145: return "F1 25 EA App 1.0.145 (in-process memory)";
+    case F1_25Build::steam_26566308: return "F1 25 Steam 26566308 (in-process memory)";
+    default: return "F1 25 (in-process memory)";
+    }
 }
 
 bool F1_25Provider::compatible() const { return impl_->ok; }
@@ -1000,18 +1020,44 @@ void F1_25Provider::sample(double now, GameState &out) { impl_->sample(now, out)
 
 const F1_25Raw &F1_25Provider::raw() const { return impl_->raw; }
 
-bool f1_25_build_matches()
+void F1_25Provider::set_results_key(uintptr_t key)
+{
+    impl_->sym.results_key = key;
+    impl_->results = {};
+}
+
+F1_25Build f1_25_detect_build()
 {
     const auto *base = reinterpret_cast<const uint8_t *>(GetModuleHandleW(nullptr));
     if (!base)
-        return false;
+        return F1_25Build::none;
     const auto *dos = reinterpret_cast<const IMAGE_DOS_HEADER *>(base);
     const auto *nt = reinterpret_cast<const IMAGE_NT_HEADERS64 *>(base + dos->e_lfanew);
-    return nt->FileHeader.TimeDateStamp == kBuildTimestamp && nt->OptionalHeader.SizeOfImage == kBuildImageSize;
+    const uint32_t ts = nt->FileHeader.TimeDateStamp;
+    const uint32_t sz = nt->OptionalHeader.SizeOfImage;
+    if (ts == kSteamBuildTimestamp && sz == kSteamBuildImageSize)
+        return F1_25Build::steam_26566308;
+    if (ts == kEaBuildTimestamp && sz == kEaBuildImageSize)
+        return F1_25Build::ea_1_0_145;
+    return F1_25Build::none;
 }
+
+const char *f1_25_build_name(F1_25Build build)
+{
+    switch (build) {
+    case F1_25Build::steam_26566308: return "Steam 26566308";
+    case F1_25Build::ea_1_0_145: return "EA App 1.0.145";
+    default: return "unsupported";
+    }
+}
+
+bool f1_25_build_matches() { return f1_25_detect_build() != F1_25Build::none; }
 
 bool f1_25_resolve(F1_25Symbols &out, const char **missing)
 {
+    const auto res = [](const char *id) -> uintptr_t {
+        return swofty::api && swofty::api->version >= 2 && swofty::api->resolve ? swofty::api->resolve(id) : 0;
+    };
     struct Want {
         const char *id;
         uintptr_t *slot;
@@ -1023,32 +1069,56 @@ bool f1_25_resolve(F1_25Symbols &out, const char **missing)
         {"g_Sess_TyreRulesSessionType", &out.session_type},
     };
     for (Want &w : wants) {
-        *w.slot = swofty::api && swofty::api->version >= 2 && swofty::api->resolve ? swofty::api->resolve(w.id) : 0;
+        *w.slot = res(w.id);
         if (!*w.slot) {
             if (missing)
                 *missing = w.id;
             return false;
         }
     }
-    // Addresses inside this build's image (the provider runs only when f1_25_build_matches()). The car type's
-    // vptr is required (the provider stays off without it); the rest is optional.
-    if (const auto *base = reinterpret_cast<const uint8_t *>(GetModuleHandleW(nullptr))) {
-        const uintptr_t b = uintptr_t(base);
-        out.vt_car_systems = b + car::systems_vt_rva;
+    const F1_25Build build = f1_25_detect_build();
+    const uintptr_t b = uintptr_t(GetModuleHandleW(nullptr));
+    // Prefer Swofty signature-resolved bindings (works on both Steam and EA App builds); fall back to
+    // Steam build 26566308 image RVAs only when running that build with an older core.
+    const auto resolve_or_steam = [&](const char *id, uintptr_t steam_rva) -> uintptr_t {
+        if (const uintptr_t a = res(id))
+            return a;
+        return build == F1_25Build::steam_26566308 && b ? b + steam_rva : 0;
+    };
+    out.vt_car_systems = resolve_or_steam("vt_Car_SystemsContainer", car::systems_vt_rva);
+    out.controllers = resolve_or_steam("g_Live_ControllerSystem", controllers::cache_rva);
+    out.vt_controllers = resolve_or_steam("vt_Sess_ControllerSystem", controllers::vt_system_rva);
+    out.vt_human = resolve_or_steam("vt_Sess_HumanController", controllers::vt_human_rva);
+    out.spectate_key = resolve_or_steam("k_Live_SpectatorDirectorKey", spectate::key_rva);
+    out.progress_key = res("k_Live_GameVehicleProgressSystemKey");
+    if (build == F1_25Build::steam_26566308 && b) {
         out.results_key = b + results::key_rva;
-        out.controllers = b + controllers::cache_rva;
-        out.vt_controllers = b + controllers::vt_system_rva;
-        out.vt_human = b + controllers::vt_human_rva;
-        out.spectate_key = b + spectate::key_rva;
+    } else if (build == F1_25Build::ea_1_0_145) {
+        out.results_key = res("k_Live_SessionSystemKey");
+        if (!out.results_key)
+            if (const uintptr_t tyre = res("k_Live_TyreSystemKey"))
+                out.results_key = tyre - (0x6082d28 - results::key_rva);
     }
-    // Optional: the track singleton has no Swofty binding; find the one instruction that loads it
-    // (mov rax,[rip+X]; mov rax,[rax+0xd0]; mov rax,[rax+0xe8] — unique in this build) and decode X.
-    uintptr_t at = 0;
-    int32_t disp = 0;
-    if (swofty::api && swofty::api->scan &&
-        swofty::api->scan(".tls$", "48 8B 05 ?? ?? ?? ?? 48 8B 80 D0 00 00 00 48 8B 80 E8 00 00 00", &at) == 1 && at &&
-        rd(at + 3, disp))
-        out.track_world = at + 7 + intptr_t(disp);
+    if (!out.vt_car_systems) {
+        if (missing)
+            *missing = "vt_Car_SystemsContainer";
+        return false;
+    }
+    // Optional: the track singleton (g_Live_RacingVehicles in Swofty bindings; otherwise scan code section
+    // for mov rax,[rip+X]; mov rax,[rax+0xd0]; mov rax,[rax+0xe8]).
+    out.track_world = res("g_Live_RacingVehicles");
+    if (!out.track_world && swofty::api && swofty::api->scan) {
+        static const char *const kCodeSections[] = {".xtls", ".tls$", ".arch"};
+        for (const char *sec : kCodeSections) {
+            uintptr_t at = 0;
+            int32_t disp = 0;
+            if (swofty::api->scan(sec, "48 8B 05 ?? ?? ?? ?? 48 8B 80 D0 00 00 00 48 8B 80 E8 00 00 00", &at) == 1 &&
+                at && rd(at + 3, disp)) {
+                out.track_world = at + 7 + intptr_t(disp);
+                break;
+            }
+        }
+    }
     return true;
 }
 

@@ -1,4 +1,4 @@
-// F1 25 (Steam build 26566308) in-process game-state provider.
+// F1 25 (Steam build 26566308 and EA App build 1.0.145) in-process game-state provider.
 #pragma once
 #include "game_state.hpp"
 
@@ -25,6 +25,7 @@ struct F1_25Symbols {
     uintptr_t vt_human = 0;       // vt_Sess_HumanController (0x145882170)
     uintptr_t spectate_key = 0;   // the spectator director's registry key: while the spectator HUD is
                                   // up the halo follows the watched car (docs/spectator-ui.md §2); optional
+    uintptr_t progress_key = 0;   // VehicleProgressSystem registry key fallback when [g_Game_Manager]+0x2d0 differs
     // vt_Car_SystemsContainer (0x145c040c8): the vptr of the component container embedded at CarLive+0x380, the
     // car's type identity (CarLive itself has no vtable). Required.
     uintptr_t vt_car_systems = 0;
@@ -83,12 +84,18 @@ public:
     bool compatible() const override;
     void sample(double now, GameState &out) override;
     const F1_25Raw &raw() const;
+    void set_results_key(uintptr_t key);
 
 private:
     std::unique_ptr<Impl> impl_;
 };
 
-// The running exe is the build the offsets were verified on (PE timestamp and image size).
+enum class F1_25Build { none, steam_26566308, ea_1_0_145 };
+
+// Detect which supported F1_25.exe build is running (PE timestamp and image size).
+F1_25Build f1_25_detect_build();
+const char *f1_25_build_name(F1_25Build build);
+// The running exe is a build the offsets were verified on (PE timestamp and image size).
 bool f1_25_build_matches();
 // Resolve the symbols through Swofty's bindings. On failure *missing names the first one that did not resolve.
 bool f1_25_resolve(F1_25Symbols &out, const char **missing);

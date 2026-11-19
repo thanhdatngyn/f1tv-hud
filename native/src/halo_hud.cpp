@@ -92,6 +92,9 @@ struct App {
     std::string last_track, last_source;
     float last_shift = 0;
     // timing tower
+    gs::F1_25Build build = gs::F1_25Build::none;
+    tower::Keys tkeys;
+    bool ea_verified = false;
     bool tower_reads = false;          // the provider is compatible: the reader has this build's keys
     el::Elements elements;             // the build-time switches as read at start (tower: live, A.tset.enabled)
     bool was_sampling = true;          // the game-state sample ran last frame
@@ -158,18 +161,299 @@ void read_tower_settings(App &A)
     s.debug = validation_log;
 }
 
+uintptr_t resolve_binding(const char *id)
+{
+    return swofty::api && swofty::api->version >= 2 && swofty::api->resolve ? swofty::api->resolve(id) : 0;
+}
+
+tower::Keys resolve_tower_keys(uintptr_t b, gs::F1_25Build build, const gs::F1_25Symbols &sym)
+{
+    if (build == gs::F1_25Build::steam_26566308)
+        return tower::keys_from_image(b, sym.game_manager);
+    tower::Keys k;
+    k.game_manager = sym.game_manager;
+    if (!b)
+        return k;
+    k.pit = resolve_binding("k_Live_PitLaneSystemKey");
+    k.safety_car = resolve_binding("k_Live_SafetyCarLogicSystemKey");
+    k.penalty_log = resolve_binding("k_Live_PenaltyLogKey");
+    k.session_component = b + 0x61cf808; // S1 (MisconductManager); k_Live_SessionSystemKey is results (0x61b7ee0)
+    k.tyres = resolve_binding("k_Live_TyreSystemKey");
+    k.marshal_zones = resolve_binding("k_Live_MarshalZoneMonitorKey");
+    k.red_flag = resolve_binding("k_Live_RedFlagSystemKey");
+    k.game_mode_context = resolve_binding("k_Live_GameModeSystemKey");
+    k.sector_table = resolve_binding("g_Live_SectorEnds");
+    if (!k.sector_table && sym.track_length)
+        k.sector_table = sym.track_length - (tower::track_globals::track_length - tower::track_globals::sector_end);
+    k.customisation = resolve_binding("g_FeTile_CustomisationSystem");
+    k.badge_names = b + tower::render_badge::names_ea;
+    k.progress = sym.progress_key;
+    // Verified EA App 1.0.145 registry keys (cross-checked on session start).
+    k.results = sym.results_key;
+    if (k.game_mode_context) {
+        k.timing = k.game_mode_context - (tower::keys::game_mode_context - tower::keys::timing);
+        k.team_tables = k.game_mode_context + (tower::keys::team_tables - tower::keys::game_mode_context);
+    }
+    k.lap_times = b + 0x61cf828;
+    return k;
+}
+
+bool match_results_obj(const tower::Mem &m, uintptr_t obj)
+{
+    uintptr_t v[2] = {};
+    if (!m.read(obj + 0x148, v, sizeof v) || !v[0] || (v[0] & 7) || v[1] <= v[0] || (v[1] - v[0]) % 8)
+        return false;
+    const size_t ne = (v[1] - v[0]) / 8;
+    if (ne < 2 || ne > 64)
+        return false;
+    uintptr_t ptrs[64] = {};
+    if (!m.read(v[0], ptrs, ne * sizeof(uintptr_t)))
+        return false;
+    int valid = 0;
+    uint64_t seen_pos = 0;
+    for (size_t i = 0; i < ne && i < 32; ++i) {
+        if (!ptrs[i] || (ptrs[i] & 7))
+            continue;
+        uint8_t b[0x58];
+        if (!m.read(ptrs[i], b, sizeof b))
+            return false;
+        if (b[0] != i || b[0x18] > 7)
+            return false;
+        uint32_t pa = 0, pb = 0;
+        std::memcpy(&pa, b + 0x48, 4);
+        std::memcpy(&pb, b + 0x50, 4);
+        const uint32_t pos = pa ^ pb;
+        if (pos >= ne || (pos < 64 && (seen_pos & (uint64_t(1) << pos))))
+            return false;
+        if (pos < 64)
+            seen_pos |= uint64_t(1) << pos;
+        ++valid;
+    }
+    return valid >= 2;
+}
+
+bool match_timing_obj(const tower::Mem &m, uintptr_t obj)
+{
+    uintptr_t v[2] = {};
+    if (!m.read(obj + 0x30, v, sizeof v) || !v[0] || (v[0] & 7) || v[1] <= v[0] || (v[1] - v[0]) % 0x98)
+        return false;
+    const size_t n = (v[1] - v[0]) / 0x98;
+    if (n < 2 || n > 64)
+        return false;
+    uint64_t seen = 0;
+    for (size_t i = 0; i < n; ++i) {
+        uint8_t e[0x98];
+        if (!m.read(v[0] + i * 0x98, e, sizeof e))
+            return false;
+        const uint8_t vid = e[0x90];
+        if (vid >= 64 || (seen & (uint64_t(1) << vid)))
+            return false;
+        if (e[0x58 + 0x10] > 1 || e[0x70 + 0x10] > 1)
+            return false;
+        seen |= uint64_t(1) << vid;
+    }
+    return true;
+}
+
+bool match_team_tables_obj(const tower::Mem &m, uintptr_t obj)
+{
+    uintptr_t tbl = 0;
+    if (!m.get(obj + tower::badge::tables, tbl) || !tbl || (tbl & 7))
+        return false;
+    uintptr_t v[2] = {};
+    if (!m.read(tbl + tower::badge::table_vec, v, sizeof v) || !v[0] || (v[0] & 7) || v[1] <= v[0] ||
+        (v[1] - v[0]) % 16)
+        return false;
+    const size_t n = (v[1] - v[0]) / 16;
+    if (n < 5 || n > 64)
+        return false;
+    for (size_t i = 0; i < std::min<size_t>(n, 8); ++i) {
+        uintptr_t rec = 0, strp = 0;
+        if (!m.get(v[0] + i * 16 + 8, rec) || !rec || (rec & 7))
+            continue;
+        if (!m.get(rec + tower::badge::record_key, strp) || !strp)
+            continue;
+        char s[tower::kBadgeKeyMax] = {};
+        if (m.read(strp, s, sizeof s - 1) && tower::badge_key_ok(s, sizeof s) && std::strlen(s) >= 3)
+            return true;
+    }
+    return false;
+}
+
+bool match_laptimes_obj(const tower::Mem &m, uintptr_t obj)
+{
+    uint8_t hdr[tower::laptimes::header];
+    if (!m.read(obj + tower::laptimes::cars, hdr, sizeof hdr))
+        return false;
+    uintptr_t v0 = 0, v1 = 0;
+    std::memcpy(&v0, hdr, 8);
+    std::memcpy(&v1, hdr + 8, 8);
+    const uint8_t fastest = hdr[tower::laptimes::fastest - tower::laptimes::cars];
+    if (!v0 || (v0 & 7) || v1 <= v0 || (v1 - v0) % 8)
+        return false;
+    const size_t ne = (v1 - v0) / 8;
+    if (ne < 2 || ne > 64 || (fastest != tower::laptimes::none && fastest >= ne))
+        return false;
+    uintptr_t ptrs[64] = {};
+    if (!m.read(v0, ptrs, ne * sizeof(uintptr_t)))
+        return false;
+    int good = 0;
+    for (size_t i = 0; i < ne && i < 8; ++i) {
+        if (!ptrs[i] || (ptrs[i] & 7))
+            continue;
+        uint8_t lap_idx = 0xff;
+        if (!m.get(ptrs[i] + tower::laptimes::lap_index, lap_idx) || lap_idx >= tower::laptimes::max_laps)
+            return false;
+        // Lap 0's invalid flag must decode to 0 or 1, and sector/lap time bytes should be readable.
+        uint8_t lap0[tower::laptimes::lap_stride];
+        if (!m.read(ptrs[i] + tower::laptimes::laps, lap0, sizeof lap0))
+            return false;
+        ++good;
+    }
+    return good >= 2;
+}
+
+void verify_ea_registry(App &A)
+{
+    A.ea_verified = true;
+    const tower::Mem m{tower_copy, nullptr};
+    uintptr_t mgr = 0, reg = 0, sl[2] = {};
+    if (!A.tkeys.game_manager || !m.get(A.tkeys.game_manager, mgr) || !mgr || !m.get(mgr + 0x30, reg) || !reg ||
+        !m.read(reg + 0x18, sl, sizeof sl))
+        return;
+    const uintptr_t base = sl[0], info = sl[1];
+    if (!base || (base & 7) || info <= base || (info - base) % 16 || (info - base) / 16 > 4096)
+        return;
+    const size_t n = (info - base) / 16;
+    const uintptr_t img = uintptr_t(GetModuleHandleW(nullptr));
+    auto rva = [img](uintptr_t a) -> uintptr_t { return a > img ? a - img : a; };
+
+    const bool had_res = A.tkeys.results && match_results_obj(m, tower::find_in_registry(m, reg, A.tkeys.results));
+    const bool had_tim = A.tkeys.timing && match_timing_obj(m, tower::find_in_registry(m, reg, A.tkeys.timing));
+    const bool had_tt = A.tkeys.team_tables && match_team_tables_obj(m, tower::find_in_registry(m, reg, A.tkeys.team_tables));
+    const bool had_lt = A.tkeys.lap_times && match_laptimes_obj(m, tower::find_in_registry(m, reg, A.tkeys.lap_times));
+
+    bool changed = false;
+    if (!had_res || !had_tim || !had_tt || !had_lt) {
+        uintptr_t found_res = had_res ? A.tkeys.results : 0;
+        uintptr_t found_tim = had_tim ? A.tkeys.timing : 0;
+        uintptr_t found_tt = had_tt ? A.tkeys.team_tables : 0;
+        uintptr_t found_lt = had_lt ? A.tkeys.lap_times : 0;
+        uintptr_t chunk[128];
+        for (size_t i = 0; i < n; i += 64) {
+            const size_t cnt = std::min<size_t>(64, n - i);
+            uint8_t used[64];
+            if (!m.read(base + i * 16, chunk, cnt * 16) || !m.read(info + i, used, cnt))
+                break;
+            for (size_t j = 0; j < cnt; ++j) {
+                const uintptr_t k = chunk[2 * j], v = chunk[2 * j + 1];
+                if (!used[j] || !k || !v || (v & 7))
+                    continue;
+                if (!found_res && match_results_obj(m, v))
+                    found_res = k;
+                if (!found_tim && match_timing_obj(m, v))
+                    found_tim = k;
+                if (!found_tt && match_team_tables_obj(m, v))
+                    found_tt = k;
+            }
+        }
+        if (!found_lt) {
+            for (size_t i = 0; i < n; i += 64) {
+                const size_t cnt = std::min<size_t>(64, n - i);
+                uint8_t used[64];
+                if (!m.read(base + i * 16, chunk, cnt * 16) || !m.read(info + i, used, cnt))
+                    break;
+                for (size_t j = 0; j < cnt; ++j) {
+                    const uintptr_t k = chunk[2 * j], v = chunk[2 * j + 1];
+                    if (!used[j] || !k || !v || (v & 7))
+                        continue;
+                    if (k == found_res || k == found_tim || k == found_tt || k == A.tkeys.pit ||
+                        k == A.tkeys.tyres || k == A.tkeys.safety_car || k == A.tkeys.penalty_log ||
+                        k == A.tkeys.session_component || k == A.tkeys.marshal_zones || k == A.tkeys.red_flag ||
+                        k == A.tkeys.game_mode_context)
+                        continue;
+                    if (match_laptimes_obj(m, v)) {
+                        found_lt = k;
+                        break;
+                    }
+                }
+                if (found_lt)
+                    break;
+            }
+        }
+        if (found_res && found_res != A.tkeys.results) {
+            A.tkeys.results = found_res;
+            A.provider->set_results_key(found_res);
+            changed = true;
+        }
+        if (found_tim && found_tim != A.tkeys.timing) {
+            A.tkeys.timing = found_tim;
+            changed = true;
+        }
+        if (found_tt && found_tt != A.tkeys.team_tables) {
+            A.tkeys.team_tables = found_tt;
+            changed = true;
+        }
+        if (found_lt && found_lt != A.tkeys.lap_times) {
+            A.tkeys.lap_times = found_lt;
+            changed = true;
+        }
+        if (changed)
+            A.treader.configure(m, A.tkeys);
+    }
+    auto hit = [&](uintptr_t k) { return k && tower::find_in_registry(m, reg, k) ? "+" : "-"; };
+    const uintptr_t prog_obj = A.tkeys.progress ? tower::find_in_registry(m, reg, A.tkeys.progress) : 0;
+    size_t prog_vec_n = 0;
+    uintptr_t prog_vec_off = 0;
+    if (prog_obj) {
+        uintptr_t pbe[2] = {};
+        if (m.read(prog_obj + 0x38, pbe, sizeof pbe) && pbe[0] && !(pbe[0] & 7) && pbe[1] > pbe[0] &&
+            (pbe[1] - pbe[0]) % 8 == 0 && (pbe[1] - pbe[0]) / 8 <= 64) {
+            prog_vec_off = 0x38;
+            prog_vec_n = (pbe[1] - pbe[0]) / 8;
+        } else {
+            for (uintptr_t off = 0x10; off <= 0x100; off += 8) {
+                if (m.read(prog_obj + off, pbe, sizeof pbe) && pbe[0] && !(pbe[0] & 7) && pbe[1] > pbe[0] &&
+                    (pbe[1] - pbe[0]) % 8 == 0 && (pbe[1] - pbe[0]) / 8 >= 2 && (pbe[1] - pbe[0]) / 8 <= 64) {
+                    prog_vec_off = off;
+                    prog_vec_n = (pbe[1] - pbe[0]) / 8;
+                    break;
+                }
+            }
+        }
+    }
+    swofty::log("[halo-re] EA registry check (changed=%d): res=0x%llx(%s) tim=0x%llx(%s) pit=0x%llx(%s) sc=0x%llx(%s) "
+                "pen=0x%llx(%s) sess=0x%llx(%s) tyre=0x%llx(%s) mz=0x%llx(%s) rf=0x%llx(%s) gmc=0x%llx(%s) "
+                "tt=0x%llx(%s) lt=0x%llx(%s) prog=0x%llx(%s,vec+0x%x n=%zu)",
+                changed ? 1 : 0, (unsigned long long)rva(A.tkeys.results), hit(A.tkeys.results),
+                (unsigned long long)rva(A.tkeys.timing), hit(A.tkeys.timing),
+                (unsigned long long)rva(A.tkeys.pit), hit(A.tkeys.pit),
+                (unsigned long long)rva(A.tkeys.safety_car), hit(A.tkeys.safety_car),
+                (unsigned long long)rva(A.tkeys.penalty_log), hit(A.tkeys.penalty_log),
+                (unsigned long long)rva(A.tkeys.session_component), hit(A.tkeys.session_component),
+                (unsigned long long)rva(A.tkeys.tyres), hit(A.tkeys.tyres),
+                (unsigned long long)rva(A.tkeys.marshal_zones), hit(A.tkeys.marshal_zones),
+                (unsigned long long)rva(A.tkeys.red_flag), hit(A.tkeys.red_flag),
+                (unsigned long long)rva(A.tkeys.game_mode_context), hit(A.tkeys.game_mode_context),
+                (unsigned long long)rva(A.tkeys.team_tables), hit(A.tkeys.team_tables),
+                (unsigned long long)rva(A.tkeys.lap_times), hit(A.tkeys.lap_times),
+                (unsigned long long)rva(A.tkeys.progress), prog_obj ? "+" : "-", unsigned(prog_vec_off), prog_vec_n);
+}
+
 void init(App &A)
 {
     A.init = true;
     gs::F1_25Symbols sym;
     const char *missing = nullptr;
-    const bool build = gs::f1_25_build_matches();
+    A.build = gs::f1_25_detect_build();
+    const bool build = A.build != gs::F1_25Build::none;
     const bool resolved = gs::f1_25_resolve(sym, &missing);
     A.provider = std::make_unique<gs::F1_25Provider>(sym, build && resolved);
     A.tpub = std::make_unique<tower::Publisher>();
+    const uintptr_t img = uintptr_t(GetModuleHandleW(nullptr));
     if (A.provider->compatible()) {
-        A.treader.configure(tower::Mem{tower_copy, nullptr},
-                            tower::keys_from_image(uintptr_t(GetModuleHandleW(nullptr)), sym.game_manager));
+        A.tkeys = resolve_tower_keys(img, A.build, sym);
+        A.treader.configure(tower::Mem{tower_copy, nullptr}, A.tkeys);
         A.tower_reads = true;
     }
     read_tower_settings(A);
@@ -185,8 +469,18 @@ void init(App &A)
                 A.elements.pit_card ? "on" : "off", A.elements.lap_card ? "on" : "off",
                 A.elements.pit_banner ? "on" : "off");
     swofty::log("[halo-re] game state: %s (build %s, bindings %s%s%s, track name %s)", A.provider->describe(),
-                build ? "Steam 26566308 matches" : "differs", resolved ? "resolved" : "missing ", resolved ? "" : missing,
-                "", sym.track_world ? "found" : "not found");
+                build ? gs::f1_25_build_name(A.build) : "differs", resolved ? "resolved" : "missing ",
+                resolved ? "" : missing, "", sym.track_world ? "found" : "not found");
+    if (A.build == gs::F1_25Build::ea_1_0_145 && img) {
+        auto rva = [img](uintptr_t a) -> uintptr_t { return a > img ? a - img : a; };
+        swofty::log("[halo-re] EA bindings RVAs: car_vt=0x%llx ctrl=0x%llx vt_ctrl=0x%llx vt_hum=0x%llx spect=0x%llx "
+                    "track=0x%llx sect=0x%llx cust=0x%llx bdg=0x%llx",
+                    (unsigned long long)rva(sym.vt_car_systems), (unsigned long long)rva(sym.controllers),
+                    (unsigned long long)rva(sym.vt_controllers), (unsigned long long)rva(sym.vt_human),
+                    (unsigned long long)rva(sym.spectate_key), (unsigned long long)rva(sym.track_world),
+                    (unsigned long long)rva(A.tkeys.sector_table), (unsigned long long)rva(A.tkeys.customisation),
+                    (unsigned long long)rva(A.tkeys.badge_names));
+    }
     if (!A.provider->compatible())
         swofty::log("[halo-re] in-process reads are off: the halo keeps the game's own speed, revs and battery and "
                     "shows nothing it cannot read");
@@ -329,9 +623,12 @@ void frame(double dt, void *)
     now_on.tower = A.tset.enabled;
     const el::Needs need = el::needs(now_on);
     static const gs::GameState kNoState{}; // nothing read: every part fails closed on it
-    if (need.sample)
+    if (need.sample) {
         A.provider->sample(A.wall, A.state);
-    else if (A.was_sampling)
+        if (A.build == gs::F1_25Build::ea_1_0_145 && !A.ea_verified && A.state.session.active &&
+            A.state.session.cars >= 2)
+            verify_ea_registry(A);
+    } else if (A.was_sampling)
         A.state = kNoState; // no element reads the game: the last sample must not live on
     A.was_sampling = need.sample;
     // the halo off: its model runs on the empty state (no read) and publishes the blank halo, 2025 / F2 dials stock
