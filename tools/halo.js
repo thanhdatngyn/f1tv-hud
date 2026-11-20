@@ -84,33 +84,33 @@ const HALO_MAKE = (LAYOUT) => {
   };
 
   const P = {
-    // Authentic 2026 F1TV broadcast smoked-glass translucent palette (soft glass atmosphere, smooth end-fades)
-    bandTop: 'rgba(12,28,48,0.52)', band: 'rgba(6,16,30,0.48)', bandBot: 'rgba(4,12,24,0.40)',
-    bandEdge: 'rgba(204,238,255,0.88)', bandGlow: 'rgba(64,180,255,0.30)',
-    bandBotEdge: 'rgba(128,208,255,0.62)', bandBotGlow: 'rgba(38,150,242,0.22)',
-    wingFill: 'rgba(6,16,28,0.20)', wingFillTop: 'rgba(16,34,56,0.26)', wingLine: 'rgba(164,222,255,0.48)',
-    discOuterTop: 'rgba(8,18,32,0)', discOuter: 'rgba(7,16,28,0.18)', discOuterBot: 'rgba(4,10,18,0.26)',
-    face: [[0, 'rgba(16,36,58,0.48)'], [0.25, 'rgba(10,24,42,0.52)'], [0.60, 'rgba(6,16,30,0.56)'], [1, 'rgba(4,10,20,0.62)']],
-    // Subtle micro-carbon dial grid (very restrained so live speed digits pop with maximum contrast)
-    mesh: [[0, 'rgba(90,180,240,0.032)'], [0.5, 'rgba(90,180,240,0.022)'], [1, 'rgba(90,180,240,0.012)']],
-    mesh2: [[0, 'rgba(90,180,240,0.014)'], [1, 'rgba(90,180,240,0.008)']],
-    // Dark metallic unlit bezel ring (lit dynamically by the 12-level smooth neon RPM bezel rb_01..12 + rb_max)
-    ring: [[0, 'rgba(56,82,108,0.78)'], [0.45, 'rgba(40,62,84,0.72)'], [0.85, 'rgba(26,42,58,0.54)'], [1, 'rgba(18,30,44,0.38)']],
-    ringGlow: [[0, 'rgba(42,130,196,0.18)'], [0.5, 'rgba(32,100,158,0.12)'], [1, 'rgba(20,60,100,0.04)']],
-    ringLight: [[0, 'rgba(84,204,255,0.82)'], [0.45, 'rgba(48,162,242,0.66)'], [0.85, 'rgba(28,118,200,0.26)'], [1, 'rgba(20,90,160,0)']],
-    white: '#F6FAFF', label: '#DCEEFF', dim: '#86A6C0',
-    boostFill: 'rgba(10,22,38,0.56)', boostLine: 'rgba(116,184,234,0.48)', boostText: '#96B8D4', hatch: 'rgba(84,154,210,0.42)',
-    boostOn: '#14D0FF', boostOnLine: '#CCF6FF', boostOnText: '#031828', hatchOn: 'rgba(116,226,255,0.92)',
-    otOnTop: '#0E7C3C', otOnBot: '#064E24', otOnLine: '#1EE882', otOnText: '#74FFAE', otOnGlow: 'rgba(24,234,126,0.34)',
-    otOff: 'rgba(10,20,34,0.54)', otOffLine: 'rgba(86,128,160,0.42)', otOffText: '#6A849A',
-    capOff: 'rgba(8,20,36,0.46)', capOffLine: 'rgba(116,204,255,0.46)', capOffText: '#96D8FA',
-    capOnTop: '#24E6FF', capOnBot: '#0690E0', capOnLine: '#C2F4FF', capOnText: '#F6FCFF',
-    stripePanel: 'rgba(6,15,26,0.36)', stripeOff: 'rgba(38,68,94,0.50)',
-    throttle: '#14DC78', throttleTop: '#3CFF9E', brake: '#FF2A3C', brakeTop: '#FF5464',
-    battLine: '#3CE8A8', battFillTop: '#16F582', battFillBot: '#00B85A', battIn: 'rgba(7,20,34,0.76)', battCharge: 'rgba(8,36,56,0.80)', bolt: '#FFFFFF',
-    aeroOn: '#38F0D8', aeroBar: '#E4F2FA', gearDim: 'rgba(204,220,234,0.82)', track: 'rgba(92,168,224,0.45)', gearLbl: '#CDE2F0',
-    gearOnBg: '#32BAFF', gearOnGlow: 'rgba(42,186,255,0.55)', gearOnText: '#041828',
-    gRing: 'rgba(100,184,238,0.48)', gCyan: '#38E0FF', gWhite: '#F4FAFF', gRed: '#FF3648',
+    // Authentic 2026 F1TV FOM broadcast smoked-obsidian glass palette (restrained, neutral deep glass, zero cartoonish neon clutter)
+    bandTop: 'rgba(10,20,34,0.52)', band: 'rgba(6,13,22,0.48)', bandBot: 'rgba(4,9,16,0.36)',
+    bandEdge: 'rgba(218,240,255,0.86)', bandGlow: 'rgba(110,196,255,0.22)',
+    bandBotEdge: 'rgba(162,212,248,0.46)', bandBotGlow: 'rgba(72,160,232,0.14)',
+    wingFill: 'rgba(5,11,20,0.16)', wingFillTop: 'rgba(14,26,42,0.20)', wingLine: 'rgba(188,224,250,0.36)',
+    discOuterTop: 'rgba(6,14,24,0)', discOuter: 'rgba(6,13,22,0.16)', discOuterBot: 'rgba(4,9,16,0.24)',
+    face: [[0, 'rgba(14,28,44,0.48)'], [0.25, 'rgba(9,19,32,0.54)'], [0.60, 'rgba(6,13,23,0.60)'], [1, 'rgba(4,9,16,0.66)']],
+    // Ultra-subtle micro-carbon dial grid
+    mesh: [[0, 'rgba(110,188,240,0.028)'], [0.5, 'rgba(110,188,240,0.018)'], [1, 'rgba(110,188,240,0.010)']],
+    mesh2: [[0, 'rgba(110,188,240,0.012)'], [1, 'rgba(110,188,240,0.006)']],
+    // Metallic outer rim + recessed groove (lit dynamically by smooth neon RPM bezel rb_01..12 + rb_max)
+    ring: [[0, 'rgba(64,88,112,0.72)'], [0.45, 'rgba(44,64,86,0.64)'], [0.85, 'rgba(28,42,58,0.48)'], [1, 'rgba(18,28,40,0.32)']],
+    ringGlow: [[0, 'rgba(60,148,216,0.16)'], [0.5, 'rgba(38,108,168,0.10)'], [1, 'rgba(20,60,100,0.03)']],
+    ringLight: [[0, 'rgba(148,224,255,0.88)'], [0.45, 'rgba(76,178,248,0.66)'], [0.85, 'rgba(40,124,204,0.24)'], [1, 'rgba(24,84,156,0.04)']],
+    white: '#F8FBFF', label: '#DDEBF6', dim: '#8AA4BA',
+    boostFill: 'rgba(8,18,30,0.54)', boostLine: 'rgba(146,196,234,0.40)', boostText: '#9BB6CC', hatch: 'rgba(112,174,220,0.34)',
+    boostOn: '#18D2FF', boostOnLine: '#D6F8FF', boostOnText: '#041826', hatchOn: 'rgba(142,232,255,0.88)',
+    otOnTop: '#0F7E40', otOnBot: '#074D26', otOnLine: '#28E884', otOnText: '#82FFB8', otOnGlow: 'rgba(32,232,128,0.28)',
+    otOff: 'rgba(8,16,28,0.52)', otOffLine: 'rgba(104,142,172,0.36)', otOffText: '#6F889C',
+    capOff: 'rgba(7,16,28,0.42)', capOffLine: 'rgba(156,214,250,0.38)', capOffText: '#A8DCFA',
+    capOnTop: '#36ECFF', capOnBot: '#0692DF', capOnLine: '#D0F7FF', capOnText: '#F8FDFF',
+    stripePanel: 'rgba(5,12,22,0.30)', stripeOff: 'rgba(44,72,96,0.42)',
+    throttle: '#14DE78', throttleTop: '#42FFA2', brake: '#FF2A3C', brakeTop: '#FF5666',
+    battLine: '#6AECC0', battFillTop: '#24F292', battFillBot: '#00BC68', battIn: 'rgba(6,16,28,0.72)', battCharge: 'rgba(8,34,54,0.76)', bolt: '#FFFFFF',
+    aeroOn: '#38F0D8', aeroBar: '#EAF4FC', gearDim: 'rgba(212,226,238,0.80)', track: 'rgba(128,186,228,0.36)', gearLbl: '#D4E4F2',
+    gearOnBg: '#EAF4FF', gearOnGlow: 'rgba(210,238,255,0.42)', gearOnText: '#071422',
+    gRing: 'rgba(120,192,238,0.44)', gCyan: '#38E0FF', gWhite: '#F4FAFF', gRed: '#FF3648',
   };
 
   // ---------- car classes (docs/halo-car-classes.md). st.carClass picks which car's halo is drawn:
@@ -158,8 +158,9 @@ const HALO_MAKE = (LAYOUT) => {
   // keeps its x and its share of the band's height and turns with the band). The layout draws 4/3 as large in game.
   // Today's set ('tv', the broadcast's off-centre camera) is every number above and the two band tables below.
   const CAM = {
-    bandTop: [[-218.0, 54.55], [-190, 33.15], [-168, 20.43], [-146, 10.2], [-122, 1.2], [-98, -6.01], [-77.0, -11.8], [-58, -18.8], [-36, -24.8], [0, -27], [36, -24.8], [58, -18.8], [77.0, -11.8], [98, -6.01], [122, 1.2], [146, 10.2], [168, 20.43], [190, 33.15], [218.0, 54.55]],
-    bandBot: [[218.0, 98.13], [188, 77.27], [166, 66.05], [144, 57.12], [122, 49.0], [100, 41.0], [80, 34.4], [64, 29.4], [36, 28.4], [0, 28.8], [-36, 28.4], [-64, 29.4], [-80, 34.4], [-100, 41.0], [-122, 49.0], [-144, 57.12], [-166, 66.05], [-188, 77.27], [-218.0, 98.13]],
+    // Smooth continuous parabolic Halo arch (zero pinch/kink around x = +-70, wrapped cleanly around physical halo)
+    bandTop: [[-218.0, 54.55], [-190, 33.15], [-168, 20.43], [-146, 10.2], [-122, 1.2], [-98, -6.2], [-77.0, -12.6], [-58, -18.6], [-36, -24.2], [0, -26.8], [36, -24.2], [58, -18.6], [77.0, -12.6], [98, -6.2], [122, 1.2], [146, 10.2], [168, 20.43], [190, 33.15], [218.0, 54.55]],
+    bandBot: [[218.0, 98.13], [188, 77.27], [166, 66.05], [144, 57.12], [122, 49.0], [100, 41.2], [80, 34.4], [64, 30.2], [36, 28.8], [0, 29.0], [-36, 28.8], [-64, 30.2], [-80, 34.4], [-100, 41.2], [-122, 49.0], [-144, 57.12], [-166, 66.05], [-188, 77.27], [-218.0, 98.13]],
     brakeLbl: { x: -56.8, y: 28.6, rot: -13.1, lean: -2.0 },
     throttleLbl: { x: 56.8, y: 28.6, rot: 13.1, lean: 2.0 },
     turn: { arrow: { x: -87.419, y: 10.516, s: 1, rot: -49.669, lean: -25.238 }, lbl: { x: -82.816, y: 22.476, fs: 4.497, rot: -17.188, lean: -17.188, tr: 0.3 }, num: { x: -83.922, y: 29.682, fs: 7.934, rot: -17.188, lean: -17.188, tr: 0.3 } },
@@ -263,9 +264,9 @@ const HALO_MAKE = (LAYOUT) => {
     }
     return out;
   }
-  // Curved capsule (RECHARGE / DEPLOY) whose top and bottom edges follow the Halo arch slope smoothly,
-  // with clean rounded corners and zero self-intersection.
-  const CAPS_INSET_R = 0.85;
+  // Curved capsule (RECHARGE / DEPLOY): fills the full crescent height down to yBot=22.0 (zero wasted bottom gap!)
+  // and slopes smoothly along the Halo arch at top & bottom with clean quadratic-Bezier corners.
+  const CAPS_INSET_R = 0.70;
   const capsRIn = () => G.caps.rIn + CAPS_INSET_R;
   const capsROut = () => (G.caps.rOut || G.caps.xOut) - CAPS_INSET_R;
   const capsXin = y => Math.sqrt(Math.max(1, capsRIn() ** 2 - y * y));
@@ -275,8 +276,8 @@ const HALO_MAKE = (LAYOUT) => {
     const ym = (c.yTop + c.yBot) / 2;
     return (c.xOut - CAPS_INSET_R) - c.kOut * (y - ym) ** 2;
   };
-  // Sloped top & bottom y of the capsule so it follows the Halo arch smoothly edge-to-edge
-  const CAP_YT_IN = -16.2, CAP_YT_OUT = -13.6, CAP_YB_IN = 20.4, CAP_YB_OUT = 19.2;
+  // Full-height sloped crescent matching real 2026 F1TV Recharge / Deploy capsules (fits 100% inside orig cap quad)
+  const CAP_YT_IN = -17.3, CAP_YT_OUT = -14.8, CAP_YB_IN = 22.0, CAP_YB_OUT = 21.6;
   const capsulePts = left => {
     const pTL = [capsXin(CAP_YT_IN), CAP_YT_IN], pTR = [capsXout(CAP_YT_OUT), CAP_YT_OUT];
     const pBR = [capsXout(CAP_YB_OUT), CAP_YB_OUT], pBL = [capsXin(CAP_YB_IN), CAP_YB_IN];
@@ -359,29 +360,79 @@ const HALO_MAKE = (LAYOUT) => {
     g.strokeStyle = '#000'; g.lineWidth = 3.2; g.stroke();
     g.restore();
   }
+  // Sweeping upper aerodynamic Halo canopy crest (merges tangentially into bandTop+dy at x=+-168, fades to 0% alpha)
+  const CANOPY_PTS = smoothPts(
+    cam
+      ? [[-168, 25.4], [-132, 9.8], [-94, -7.2], [-56, -22.5], [-26, -33.4], [0, -37.0], [26, -33.4], [56, -22.5], [94, -7.2], [132, 9.8], [168, 25.4]]
+      : [[-165, 34.0], [-130, 15.5], [-92, -3.5], [-56, -21.2], [-26, -33.2], [0, -37.0], [26, -33.2], [56, -21.2], [92, -3.5], [130, 15.5], [165, 34.0]],
+    false, 10
+  );
+  function wingsOnlyFadeGrad(g, x0, x1, rgb, peakA) {
+    // Transparent at outer tips (0.00/1.00) AND completely faded out across the middle (|x| < 72, around 0.34..0.66)
+    // so there is NO hard bottom line cutting across the centre under BRAKE / Battery / THROTTLE!
+    const gr = g.createLinearGradient(x0, 0, x1, 0);
+    gr.addColorStop(0.00, `rgba(${rgb},0)`);
+    gr.addColorStop(0.08, `rgba(${rgb},${(peakA * 0.22).toFixed(3)})`);
+    gr.addColorStop(0.18, `rgba(${rgb},${peakA.toFixed(3)})`);
+    gr.addColorStop(0.30, `rgba(${rgb},${(peakA * 0.72).toFixed(3)})`);
+    gr.addColorStop(0.37, `rgba(${rgb},0)`);
+    gr.addColorStop(0.63, `rgba(${rgb},0)`);
+    gr.addColorStop(0.70, `rgba(${rgb},${(peakA * 0.72).toFixed(3)})`);
+    gr.addColorStop(0.82, `rgba(${rgb},${peakA.toFixed(3)})`);
+    gr.addColorStop(0.92, `rgba(${rgb},${(peakA * 0.22).toFixed(3)})`);
+    gr.addColorStop(1.00, `rgba(${rgb},0)`);
+    return gr;
+  }
   function drawBand(g) {
-    g.save(); g.translate(G.band.dx, G.band.dy);
-    // Smooth smoked-glass arch fill that dissolves gracefully to 0% opacity at both outer tips
-    poly(g, [...bandTopPts, ...bandBotPts]);
-    g.fillStyle = hFadeGrad(g, bandX0, bandX1, '8,20,36', 0.44, 0.54);
-    g.fill();
-    // Clip subtle upper-glass sheen & inner bottom glow cleanly to the band silhouette
-    g.save(); poly(g, [...bandTopPts, ...bandBotPts]); g.clip();
-    // Delicate upper-edge broadcast glass reflection
-    const sheen = g.createLinearGradient(0, -28, 0, 18);
-    sheen.addColorStop(0, 'rgba(170,224,255,0.12)');
-    sheen.addColorStop(0.38, 'rgba(120,196,255,0.03)');
-    sheen.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = sheen; g.fillRect(bandX0 - 4, -36, bandX1 - bandX0 + 8, 60);
-    // Soft luminous bottom edge fading cleanly to 0% at both tips
-    poly(g, bandBotPts, false);
-    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '48,162,248', 0.22, 0.26); g.lineWidth = 3.8; g.stroke();
-    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '142,216,255', 0.56, 0.68); g.lineWidth = 0.65; g.stroke();
+    // 1. Real 2026 F1TV upper sweeping glass canopy & crisp silver-white outer Halo crest over the dial & upper wings
+    g.save();
+    const canTop = CANOPY_PTS;
+    const crestFade = (rgb, a) => {
+      const gr = g.createLinearGradient(canTop[0][0], 0, canTop[canTop.length - 1][0], 0);
+      gr.addColorStop(0.00, `rgba(${rgb},0)`);
+      gr.addColorStop(0.16, `rgba(${rgb},${(a * 0.38).toFixed(3)})`);
+      gr.addColorStop(0.36, `rgba(${rgb},${(a * 0.88).toFixed(3)})`);
+      gr.addColorStop(0.50, `rgba(${rgb},${a.toFixed(3)})`);
+      gr.addColorStop(0.64, `rgba(${rgb},${(a * 0.88).toFixed(3)})`);
+      gr.addColorStop(0.84, `rgba(${rgb},${(a * 0.38).toFixed(3)})`);
+      gr.addColorStop(1.00, `rgba(${rgb},0)`);
+      return gr;
+    };
+    const canBot = bandTopPts.filter(([x]) => x >= canTop[0][0] - 1 && x <= canTop[canTop.length - 1][0] + 1)
+                             .map(([x, y]) => [x + G.band.dx, y + G.band.dy]).reverse();
+    if (canBot.length > 2) {
+      poly(g, [...canTop, ...canBot], true);
+      g.fillStyle = crestFade('8,18,30', 0.24);
+      g.fill();
+    }
+    poly(g, canTop, false);
+    g.strokeStyle = crestFade('150,214,255', 0.16); g.lineWidth = 2.2; g.stroke();
+    g.strokeStyle = crestFade('234,244,255', 0.72); g.lineWidth = 0.65; g.stroke();
     g.restore();
-    // Silky luminous silver-blue top arch rail dissolving smoothly at both outer ends
+
+    // 2. Main smoked-obsidian glass arch band (dissolves cleanly to 0% at both outer tips)
+    g.save(); g.translate(G.band.dx, G.band.dy);
+    poly(g, [...bandTopPts, ...bandBotPts]);
+    g.fillStyle = hFadeGrad(g, bandX0, bandX1, '6,13,22', 0.46, 0.54);
+    g.fill();
+    // Clip delicate glass sheen & subtle wing-only bottom edge to the band silhouette
+    g.save(); poly(g, [...bandTopPts, ...bandBotPts]); g.clip();
+    // Soft vertical glass-depth shading (lighter specular top, soft feathered bottom)
+    const sheen = g.createLinearGradient(0, -28, 0, 34);
+    sheen.addColorStop(0.00, 'rgba(186,228,255,0.11)');
+    sheen.addColorStop(0.28, 'rgba(130,196,244,0.03)');
+    sheen.addColorStop(0.82, 'rgba(0,0,0,0)');
+    sheen.addColorStop(1.00, 'rgba(0,0,0,0.08)');
+    g.fillStyle = sheen; g.fillRect(bandX0 - 4, -36, bandX1 - bandX0 + 8, 90);
+    // Subtle bottom edge ONLY on the wings — completely faded out in the middle (under BRAKE / Battery / THROTTLE)
+    poly(g, bandBotPts, false);
+    g.strokeStyle = wingsOnlyFadeGrad(g, bandX0, bandX1, '96,176,238', 0.14); g.lineWidth = 2.6; g.stroke();
+    g.strokeStyle = wingsOnlyFadeGrad(g, bandX0, bandX1, '178,220,250', 0.42); g.lineWidth = 0.55; g.stroke();
+    g.restore();
+    // Refined silver-ice top arch hairline (fades smoothly to 0% at both wing tips)
     poly(g, bandTopPts, false);
-    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '64,184,255', 0.28, 0.34); g.lineWidth = 3.2; g.stroke();
-    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '208,240,255', 0.84, 0.94); g.lineWidth = 0.65; g.stroke();
+    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '96,188,248', 0.20, 0.24); g.lineWidth = 2.4; g.stroke();
+    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '216,240,255', 0.74, 0.84); g.lineWidth = 0.58; g.stroke();
     g.restore();
   }
   // Wing frame: open-ended U-curve following the band edges (inset) with clean quadratic-Bezier rounded inner corners
@@ -420,22 +471,22 @@ const HALO_MAKE = (LAYOUT) => {
   function drawWing(g, W, side) {
     const pts = wingPts(W, side);
     g.save(); g.translate(G.band.dx, G.band.dy);
-    // Ultra-subtle frosted glass fill fading smoothly to 0% at the outer tip
+    // Ultra-delicate smoked acrylic interior fading smoothly to 0% at outer wing tip
     poly(g, pts, true);
-    g.fillStyle = wingFadeGrad(g, W, side, '10,24,42', 0.22);
+    g.fillStyle = wingFadeGrad(g, W, side, '8,18,32', 0.16);
     g.fill();
-    // Open U-shaped gossamer inner hairline (NO vertical line closing the outer end!)
+    // Gossamer-thin refined silver-ice inner bevel (no heavy glowing wireframe box!)
     poly(g, pts, false);
-    g.strokeStyle = wingFadeGrad(g, W, side, '70,186,255', 0.14); g.lineWidth = 1.6; g.stroke();
-    g.strokeStyle = wingFadeGrad(g, W, side, '172,226,255', 0.48); g.lineWidth = 0.52; g.stroke();
+    g.strokeStyle = wingFadeGrad(g, W, side, '188,224,250', 0.36); g.lineWidth = 0.48; g.stroke();
     g.restore();
   }
 
   // ---------- centre cluster
   function drawStripes(g, left, value, on, onTop) {
     const s = G.stripes, pts = stripePanelPts(left);
+    // Clean recessed dark-glass slat channel with ultra-subtle bevel (zero heavy wireframe box)
     poly(g, pts); g.fillStyle = P.stripePanel; g.fill();
-    g.strokeStyle = 'rgba(136,204,248,0.22)'; g.lineWidth = 0.42; g.stroke();
+    g.strokeStyle = 'rgba(170,214,244,0.16)'; g.lineWidth = 0.38; g.stroke();
     const lit = Math.round(value * s.n);
     for (let i = 0; i < s.n; i++) {
       const isOn = i < lit;
@@ -854,14 +905,14 @@ const HALO_MAKE = (LAYOUT) => {
     const q = G.gears, t = i / 8, [x, y] = gearPt(t, 0), [tx, ty] = bezTan(q.p0, q.p1, q.p2, t);
     const rotDeg = Math.atan2(ty, tx) / D;
     if (on) {
-      // Glowing cyan-blue active gear pill (inspired by F1 broadcast halo)
+      // Sleek luminous frosted-white broadcast active gear highlight (harmonizes with every F1 team color)
       const pw = q.fsOn * 0.88, ph = q.fsOn * 0.94;
       g.save(); g.translate(x, y); frame(g, rotDeg, q.lean);
-      rr(g, -pw / 2, -ph / 2, pw, ph, 1.0);
+      rr(g, -pw / 2 - 0.35, -ph / 2 - 0.35, pw + 0.7, ph + 0.7, 1.25);
       g.fillStyle = P.gearOnGlow; g.fill();
       const gg = g.createLinearGradient(0, -ph / 2, 0, ph / 2);
-      gg.addColorStop(0, '#72E4FF'); gg.addColorStop(1, P.gearOnBg);
-      rr(g, -pw / 2 + 0.35, -ph / 2 + 0.35, pw - 0.7, ph - 0.7, 0.8);
+      gg.addColorStop(0, '#FFFFFF'); gg.addColorStop(1, '#CFE6FA');
+      rr(g, -pw / 2 + 0.2, -ph / 2 + 0.2, pw - 0.4, ph - 0.4, 0.85);
       g.fillStyle = gg; g.fill();
       g.restore();
       text(g, 'N12345678'[i], x, y, q.fsOn * 0.92, P.gearOnText, { rot: rotDeg, lean: q.lean, w: 800 });

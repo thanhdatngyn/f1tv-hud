@@ -204,7 +204,7 @@ def render_preview(browser, port, out_dir):
     HALO.draw(gh, {
       kmh: 248, gear: 6, rpm: 0.85, throttle: 0.92, brake: 0.0,
       soc: 0.74, recharge: 0.0, deploy: 0.85, boost: true, ot: true, aero: true,
-      pos: 1, driver: 'NORRIS', rivalPos: 2, rival: 'VERSTAPPEN', team: '#FF8000',
+      pos: 7, driver: 'ANTONELLI', rivalPos: 6, rival: 'HAMILTON', team: '#27F4D2',
       turn: 14, turnDir: 'R', theme: 'authentic'
     });
     gh.restore();
@@ -213,7 +213,7 @@ def render_preview(browser, port, out_dir):
     HALO.draw(gh, {
       kmh: 312, gear: 7, rpm: 0.94, throttle: 1.0, brake: 0.0,
       soc: 0.42, recharge: 0.0, deploy: 1.0, boost: true, ot: false, aero: true,
-      pos: 1, driver: 'NORRIS', rivalPos: 2, rival: 'VERSTAPPEN', team: '#FF8000',
+      pos: 7, driver: 'ANTONELLI', rivalPos: 6, rival: 'HAMILTON', team: '#27F4D2',
       turn: 14, turnDir: 'R', theme: 'authentic'
     });
     gh.restore();
