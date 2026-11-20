@@ -43,6 +43,9 @@ struct View {
     float recharge = 0, deploy = 0;  // 0..1 of the MGU-K limit, eased
     float recharge25 = 0, deploy25 = 0;  // the same power on the 2025 cars' fixed 120 kW scale, eased
     bool boost = false;        // the driver's ERS mode is the game's "Overtake" mode (max deployment on demand)
+    bool rpm_ok = false;
+    int rpm_level = 0;         // 0..12 progressive RPM bezel segments around the speed dial
+    bool rpm_shift = false;    // pulsing shift-up alert when RPM is at/near the rev limiter (>= 95%)
     bool race = false;
     bool names = true;          // the drivers' names are wanted (setting); the template binds the game's own names
     bool all_cars = true;       // the halo is wanted in 2025 and F2 cars (setting all_cars)

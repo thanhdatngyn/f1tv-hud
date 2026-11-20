@@ -42,11 +42,10 @@ const HALO_MAKE = (LAYOUT) => {
     stripes: { rIn: 53.058, cyIn: 2.805, rOut: 66.528, cyOut: 1.075, n: 10, y0: 22.781, pitch: 3.54, xRef: 59, k: 0.233, th: 2.40, pad: 0.9, litGap: 0.5 },
     // BRAKE / THROTTLE: `lean` is the stems' angle from the screen's vertical (frame()). On the Interlagos reference both
     // labels stand upright on screen on their tilted baselines (label-box NCC against our label at known
-    // leans peaks at -2..+4 for BRAKE, +4..+6 for THROTTLE; the stem-edge angle reads -4 / +3), so their shear
-    // against the baseline stays: the reference shows it. BRAKE was +16.2 (a Melbourne fit, 32 deg against its baseline).
-    brakeLbl: { x: -53.423, y: 31.523, rot: -15.979, lean: -2.0 },
-    throttleLbl: { x: 51.665, y: 30.667, rot: 13.023, lean: 2.98 },
-    lblFs: 4.541,
+    // BRAKE / THROTTLE: tucked cleanly INSIDE the dark glass band beneath the slats, parallel to slat slope (13.1 deg)
+    brakeLbl: { x: -56.8, y: 28.6, rot: -13.1, lean: -2.0 },
+    throttleLbl: { x: 56.8, y: 28.6, rot: 13.1, lean: 2.0 },
+    lblFs: 3.70,
     // values below were fitted against two Melbourne frames, t=205 s and t=262 s (fit.html, normalised cross-correlation)
     // TURN and its number turned -20.6 degrees with no shear (lean = rot, was -1.6): the number is a live game
     // text, which the game turns but cannot shear, and TURN (a sprite, shown only with a number) takes the
@@ -68,8 +67,9 @@ const HALO_MAKE = (LAYOUT) => {
              gx: 154.802, gy: 30.048, grot: 28.62, rx: 142.439, ry: 49.863, rrot: 28.804, lfs: 4.251, llean: 15.7,
              r0t: -0.046, r15t: 1.108, rEndOff: 4.642, rEndFs: 5.023 },
     band: { dx: 0.65, dy: 5.0 },
-    wings: { L: { xi: -71.17, tilt: 3.9, top: 5.0, bot: 3.5, r: 3.4, xFar: -215 },
-             R: { xi: 71.65, tilt: 9.8, top: 1.8, bot: 5.0, r: 3.4, xFar: 220 } },
+    // wings: clean clearance around ACTIVE AERO, GEARS, TURN & driver names (matches real 2026 F1TV Halo)
+    wings: { L: { xi: -71.8, tilt: 4.0, top: 2.6, bot: 3.0, r: 4.2, xFar: -215 },
+             R: { xi: 71.8, tilt: 9.6, top: 1.8, bot: 3.2, r: 4.2, xFar: 220 } },
     // G-force variant (optional, off by default; docs/gmeter/design.md). Measured on the Spa clip (Belgian GP Q2,
     // 18 Jul 2026, 640x360) in this plane D, with the outer ring = the rim (35.0). Angles: 0 = right, 90 = down.
     // rings: the three inner rings; val: the speed digits' size (cap 9.3 measured) with tighter tracking (Saira is
@@ -84,44 +84,33 @@ const HALO_MAKE = (LAYOUT) => {
   };
 
   const P = {
-    bandTop: 'rgba(24,62,78,0.50)', band: 'rgba(8,26,40,0.50)', bandBot: 'rgba(6,18,28,0.40)',
-    bandEdge: 'rgba(150,212,222,0.42)', bandGlow: 'rgba(90,200,210,0.10)',
-    wingFill: 'rgba(10,22,32,0.55)', wingLine: 'rgba(150,186,202,0.50)',
-    // dial (V17-V22): collar at the sides / above the waist; the face's tint stops (0 = its top, 1 = its bottom),
-    // translucent (alpha 0.8) and set so that over the reference's scene they give the measured face; the mesh's ink
-    // down the face (mesh2: added on every second line, a quarter of it); rings as [stop, colour] lists, fading toward
-    // the bottom like the reference's (bright ring at rim, its soft edge ringGlow, the thin light ring further out)
-    discOuterTop: 'rgba(23,36,52,0)', discOuter: 'rgba(23,36,52,0.92)', discOuterBot: 'rgba(18,32,44,0.92)',
-    face: [[0, 'rgba(170,183,189,0.8)'], [0.05, 'rgba(170,183,189,0.8)'], [0.151, 'rgba(136,152,163,0.8)'], [0.195, 'rgba(120,137,150,0.8)'],
-           [0.238, 'rgba(95,124,144,0.8)'], [0.282, 'rgba(86,106,126,0.8)'], [0.34, 'rgba(81,106,129,0.8)'], [0.413, 'rgba(59,84,108,0.8)'],
-           [0.762, 'rgba(49,70,91,0.8)'],
-           [0.878, 'rgba(28,52,66,0.8)'], [1, 'rgba(28,52,66,0.8)']],
-    mesh: [[0, 'rgba(6,14,22,0.068)'], [0.05, 'rgba(6,14,22,0.068)'], [0.2, 'rgba(6,14,22,0.096)'], [0.34, 'rgba(6,14,22,0.150)'], [0.78, 'rgba(6,14,22,0.156)'], [1, 'rgba(6,14,22,0.152)']],
-    mesh2: [[0, 'rgba(6,14,22,0.017)'], [0.05, 'rgba(6,14,22,0.017)'], [0.2, 'rgba(6,14,22,0.024)'], [0.34, 'rgba(6,14,22,0.0375)'], [0.78, 'rgba(6,14,22,0.039)'], [1, 'rgba(6,14,22,0.038)']],
-    ring: [[0, 'rgba(162,174,184,0.76)'], [0.02, 'rgba(162,174,184,0.78)'], [0.07, 'rgba(162,174,184,0.94)'], [0.15, 'rgba(162,174,184,0.95)'], [0.25, 'rgba(160,172,183,0.80)'], [0.63, 'rgba(158,170,181,0.83)'], [0.75, 'rgba(150,162,174,0.65)'],
-           [0.85, 'rgba(120,135,148,0.32)'], [1, 'rgba(100,115,128,0.50)']],
-    ringGlow: [[0, 'rgba(150,162,170,0.16)'], [0.25, 'rgba(150,162,170,0.14)'], [0.37, 'rgba(150,162,170,0.10)'], [0.63, 'rgba(150,162,170,0.08)'], [0.85, 'rgba(150,162,170,0)']],
-    ringLight: [[0, 'rgba(176,184,190,0.60)'], [0.02, 'rgba(176,184,190,0.62)'], [0.07, 'rgba(176,184,190,0.83)'], [0.1, 'rgba(176,184,190,0.82)'], [0.25, 'rgba(176,184,190,0.73)'], [0.37, 'rgba(174,182,189,0.72)'], [0.63, 'rgba(170,178,186,0.645)'],
-                [0.75, 'rgba(160,170,178,0.57)'], [0.85, 'rgba(130,140,150,0.24)'], [0.93, 'rgba(110,120,130,0)']],
-    white: '#F4F7F8', label: '#E4F0F3', dim: '#93A9BB',
-    boostFill: '#475A6D', boostLine: '#5B7183', boostText: '#9CADBC', hatch: 'rgba(120,146,170,0.85)',
-    boostOn: '#33ADF7', boostOnLine: '#A6DDFF', boostOnText: '#062238', hatchOn: 'rgba(127,214,255,0.95)',
-    // OVERTAKE lit: bright green outline and letters on a dark-green fill (docs/research 3.3)
-    otOnTop: '#1A7438', otOnBot: '#12602C', otOnLine: '#52C878', otOnText: '#58C070', otOnGlow: 'rgba(80,200,120,0.30)',
-    otOff: 'rgba(92,101,108,0.92)', otOffLine: 'rgba(130,140,148,0.8)', otOffText: '#283035',
-    capOff: 'rgba(30,84,124,0.95)', capOffLine: '#3A88B8', capOffText: '#5DB0D6',
-    // lit capsule fill (V22): a little darker, to the reference's DEPLOY-lit #1686CA-#1986D1 (was #3A9AEE / #1784CE)
-    capOnTop: '#2793E1', capOnBot: '#0F7EC3', capOnLine: '#44B0E4', capOnText: '#58A2F0',
-    // unlit slats blue-grey; lit brake red (207,84,101) as measured on compressed footage, lifted a little toward the
-    // source colours (docs/research 3.6). V20: the panel between the slats, the unlit slats and the lit throttle
-    // from the Interlagos reference (separators (35,58,76), unlit (56,79,97), lit throttle (44,216,191))
-    stripePanel: 'rgba(33,58,79,0.85)', stripeOff: 'rgba(58,82,99,0.92)',
-    throttle: '#2CD8BF', throttleTop: '#36DDC6', brake: '#E2566A', brakeTop: '#EC6A7C',
-    battLine: '#4FB8E1', battFillTop: '#1489D6', battFillBot: '#0F7DCB', battIn: '#235079', battCharge: '#0E4877', bolt: '#4FE0F5',
-    aeroOn: '#45E4D4', aeroBar: '#C9D3D8', gearDim: 'rgba(205,216,222,0.86)', track: 'rgba(160,182,195,0.55)', gearLbl: '#C9D5DD',
-    // G-force variant: Spa clip samples (360p, compressed) cyan (125-134, 209-222, 220-228), white (228, 234, 238),
-    // red block (226, 118, 130), lifted a little toward the source colours like the slats; rings are sub-pixel there
-    gRing: 'rgba(196,172,208,0.62)', gCyan: '#86DDE6', gWhite: '#F2F6F8', gRed: '#EE5866',
+    // Authentic 2026 F1TV broadcast smoked-glass translucent palette (soft glass atmosphere, smooth end-fades)
+    bandTop: 'rgba(12,28,48,0.52)', band: 'rgba(6,16,30,0.48)', bandBot: 'rgba(4,12,24,0.40)',
+    bandEdge: 'rgba(204,238,255,0.88)', bandGlow: 'rgba(64,180,255,0.30)',
+    bandBotEdge: 'rgba(128,208,255,0.62)', bandBotGlow: 'rgba(38,150,242,0.22)',
+    wingFill: 'rgba(6,16,28,0.20)', wingFillTop: 'rgba(16,34,56,0.26)', wingLine: 'rgba(164,222,255,0.48)',
+    discOuterTop: 'rgba(8,18,32,0)', discOuter: 'rgba(7,16,28,0.18)', discOuterBot: 'rgba(4,10,18,0.26)',
+    face: [[0, 'rgba(16,36,58,0.48)'], [0.25, 'rgba(10,24,42,0.52)'], [0.60, 'rgba(6,16,30,0.56)'], [1, 'rgba(4,10,20,0.62)']],
+    // Subtle micro-carbon dial grid (very restrained so live speed digits pop with maximum contrast)
+    mesh: [[0, 'rgba(90,180,240,0.032)'], [0.5, 'rgba(90,180,240,0.022)'], [1, 'rgba(90,180,240,0.012)']],
+    mesh2: [[0, 'rgba(90,180,240,0.014)'], [1, 'rgba(90,180,240,0.008)']],
+    // Dark metallic unlit bezel ring (lit dynamically by the 12-level smooth neon RPM bezel rb_01..12 + rb_max)
+    ring: [[0, 'rgba(56,82,108,0.78)'], [0.45, 'rgba(40,62,84,0.72)'], [0.85, 'rgba(26,42,58,0.54)'], [1, 'rgba(18,30,44,0.38)']],
+    ringGlow: [[0, 'rgba(42,130,196,0.18)'], [0.5, 'rgba(32,100,158,0.12)'], [1, 'rgba(20,60,100,0.04)']],
+    ringLight: [[0, 'rgba(84,204,255,0.82)'], [0.45, 'rgba(48,162,242,0.66)'], [0.85, 'rgba(28,118,200,0.26)'], [1, 'rgba(20,90,160,0)']],
+    white: '#F6FAFF', label: '#DCEEFF', dim: '#86A6C0',
+    boostFill: 'rgba(10,22,38,0.56)', boostLine: 'rgba(116,184,234,0.48)', boostText: '#96B8D4', hatch: 'rgba(84,154,210,0.42)',
+    boostOn: '#14D0FF', boostOnLine: '#CCF6FF', boostOnText: '#031828', hatchOn: 'rgba(116,226,255,0.92)',
+    otOnTop: '#0E7C3C', otOnBot: '#064E24', otOnLine: '#1EE882', otOnText: '#74FFAE', otOnGlow: 'rgba(24,234,126,0.34)',
+    otOff: 'rgba(10,20,34,0.54)', otOffLine: 'rgba(86,128,160,0.42)', otOffText: '#6A849A',
+    capOff: 'rgba(8,20,36,0.46)', capOffLine: 'rgba(116,204,255,0.46)', capOffText: '#96D8FA',
+    capOnTop: '#24E6FF', capOnBot: '#0690E0', capOnLine: '#C2F4FF', capOnText: '#F6FCFF',
+    stripePanel: 'rgba(6,15,26,0.36)', stripeOff: 'rgba(38,68,94,0.50)',
+    throttle: '#14DC78', throttleTop: '#3CFF9E', brake: '#FF2A3C', brakeTop: '#FF5464',
+    battLine: '#3CE8A8', battFillTop: '#16F582', battFillBot: '#00B85A', battIn: 'rgba(7,20,34,0.76)', battCharge: 'rgba(8,36,56,0.80)', bolt: '#FFFFFF',
+    aeroOn: '#38F0D8', aeroBar: '#E4F2FA', gearDim: 'rgba(204,220,234,0.82)', track: 'rgba(92,168,224,0.45)', gearLbl: '#CDE2F0',
+    gearOnBg: '#32BAFF', gearOnGlow: 'rgba(42,186,255,0.55)', gearOnText: '#041828',
+    gRing: 'rgba(100,184,238,0.48)', gCyan: '#38E0FF', gWhite: '#F4FAFF', gRed: '#FF3648',
   };
 
   // ---------- car classes (docs/halo-car-classes.md). st.carClass picks which car's halo is drawn:
@@ -169,17 +158,17 @@ const HALO_MAKE = (LAYOUT) => {
   // keeps its x and its share of the band's height and turns with the band). The layout draws 4/3 as large in game.
   // Today's set ('tv', the broadcast's off-centre camera) is every number above and the two band tables below.
   const CAM = {
-    bandTop: [[-218.0, 54.55], [-190, 33.15], [-168, 20.43], [-146, 10.2], [-122, 1.2], [-98, -6.01], [-77.0, -11.0], [-58, -17], [-36, -24], [0, -27], [36, -24], [58, -17], [77.0, -11.0], [98, -6.01], [122, 1.2], [146, 10.2], [168, 20.43], [190, 33.15], [218.0, 54.55]],
-    bandBot: [[218.0, 98.13], [188, 77.27], [166, 66.05], [144, 57.12], [122, 49.0], [100, 39.66], [80, 31.0], [64, 25.0], [36, 28], [0, 29], [-36, 28], [-64, 25.0], [-80, 31.0], [-100, 39.66], [-122, 49.0], [-144, 57.12], [-166, 66.05], [-188, 77.27], [-218.0, 98.13]],
-    brakeLbl: { x: -52.544, y: 31.095, rot: -14.501, lean: -2.49 },
-    throttleLbl: { x: 52.544, y: 31.095, rot: 14.501, lean: 2.49 },
+    bandTop: [[-218.0, 54.55], [-190, 33.15], [-168, 20.43], [-146, 10.2], [-122, 1.2], [-98, -6.01], [-77.0, -11.8], [-58, -18.8], [-36, -24.8], [0, -27], [36, -24.8], [58, -18.8], [77.0, -11.8], [98, -6.01], [122, 1.2], [146, 10.2], [168, 20.43], [190, 33.15], [218.0, 54.55]],
+    bandBot: [[218.0, 98.13], [188, 77.27], [166, 66.05], [144, 57.12], [122, 49.0], [100, 41.0], [80, 34.4], [64, 29.4], [36, 28.4], [0, 28.8], [-36, 28.4], [-64, 29.4], [-80, 34.4], [-100, 41.0], [-122, 49.0], [-144, 57.12], [-166, 66.05], [-188, 77.27], [-218.0, 98.13]],
+    brakeLbl: { x: -56.8, y: 28.6, rot: -13.1, lean: -2.0 },
+    throttleLbl: { x: 56.8, y: 28.6, rot: 13.1, lean: 2.0 },
     turn: { arrow: { x: -87.419, y: 10.516, s: 1, rot: -49.669, lean: -25.238 }, lbl: { x: -82.816, y: 22.476, fs: 4.497, rot: -17.188, lean: -17.188, tr: 0.3 }, num: { x: -83.922, y: 29.682, fs: 7.934, rot: -17.188, lean: -17.188, tr: 0.3 } },
     names: { x: -106.759, y: 28.697, rot: -17.18, bend: 0.001167, lean: -11, leanRel: 0, drvV: 0.73, laneGap: 13.784, drvFs: 8.508, rivFs: 6.963, rivShift: 3.703, tr: 1.26, lineA: -7.495, lineB: 7.858, lineW: 0.8, railA0: 3.01, railB0: -3.02, cardEnd: -84.44, numEnd: -67.686, numGap: 6.86, numBox: 14.0, nameBox: 62.0 },
-    aero: { x1: 89.654, y1: 4.916, x2: 88.54, y2: 9.322, rot: 14.189, lean: 10.889, fs: 4.371, tr: 0.587, barX: 85.19, barY: 20.457, barDx: 3.85, barDy: -3.76, barLen: 12.24, barAng: 13.342, slHx: 2.78, slHy: 0.76, slLen: 8.84, slAng: -54.258, slTh: 1.25, barTh: 1.1 },
-    // gear digits: larger and bolder than the 'tv' set's 6.916 / 700 and 6.557 / 780
-    gears: { p0: [107.887, 19.155], p1: [149.139, 30.672], p2: [188.881, 52.287], fs: 7.7, fsOn: 7.7, w: 800, wOn: 880, lean: 5.762, track: 7.107, trackW: 1.9, mx: 97.901, my: 26.182, mr: 0, gx: 154.802, gy: 24.141, grot: 20.456, rx: 142.439, ry: 45.689, rrot: 21.994, lfs: 4.251, llean: 8.085, r0t: -0.046, r15t: 1.108, rEndOff: 4.642, rEndFs: 5.023 },
+    aero: { x1: 90.0, y1: 5.5, x2: 88.8, y2: 9.9, rot: 15.6, lean: 11.5, fs: 4.25, tr: 0.55, barX: 85.19, barY: 20.457, barDx: 3.85, barDy: -3.76, barLen: 12.24, barAng: 13.342, slHx: 2.78, slHy: 0.76, slLen: 8.84, slAng: -54.258, slTh: 1.25, barTh: 1.1 },
+    // gear digits & aligned GEARS / RPM x1000 labels (parallel to wing top border & RPM curve)
+    gears: { p0: [107.887, 19.155], p1: [149.139, 30.672], p2: [188.881, 52.287], fs: 7.7, fsOn: 7.7, w: 800, wOn: 880, lean: 5.762, track: 7.107, trackW: 1.9, mx: 97.901, my: 26.182, mr: 0, gx: 153.5, gy: 25.6, grot: 24.0, rx: 146.5, ry: 46.8, rrot: 22.8, lfs: 4.15, llean: 8.5, r0t: -0.046, r15t: 1.108, rEndOff: 4.642, rEndFs: 5.023 },
     band: { dx: 0.0, dy: 5.0 },
-    wings: { L: { xi: -71.41, tilt: 6.85, top: 3.4, bot: 4.25, r: 3.4, xFar: -218.0 }, R: { xi: 71.41, tilt: 6.85, top: 3.4, bot: 4.25, r: 3.4, xFar: 218.0 } },
+    wings: { L: { xi: -71.8, tilt: 6.85, top: 2.2, bot: 3.2, r: 4.2, xFar: -218.0 }, R: { xi: 71.8, tilt: 6.85, top: 2.2, bot: 3.2, r: 4.2, xFar: 218.0 } },
     drs: { y: 12.527, rot: 14.189, lean: 10.889 },
   };
   const cam = LAYOUT === 'cam';
@@ -187,7 +176,7 @@ const HALO_MAKE = (LAYOUT) => {
 
   // ---------- text
   let WEIGHT = 700;
-  function font(g, px) { g.font = `${WEIGHT} ${px}px ${FONT}`; g.fontStretch = 'expanded'; }
+  function font(g, px) { g.font = `${Math.min(800, WEIGHT)} ${px}px ${FONT}`; }
   function adv(g, s, px) { font(g, px); return [...s].map(ch => g.measureText(ch).width); }
   const sum = a => a.reduce((p, q) => p + q, 0);
   // Glyph frame: baseline along `rot`, verticals along `lean` (both degrees, screen space).
@@ -247,83 +236,206 @@ const HALO_MAKE = (LAYOUT) => {
     });
     return out;
   }
-  // Shape between an inner edge x = xin(y) and an outer edge x = xout(y) over y in [yT, yB] (right side; mirrored for the left).
-  function sideShape(xin, xout, yT, yB, rcO, rcI, left) {
-    const N = 40, raw = [], corners = [];
-    corners.push([raw.length, rcI]); raw.push([xin(yT), yT]);
-    corners.push([raw.length, rcO]); raw.push([xout(yT), yT]);
-    for (let i = 1; i < N; i++) { const y = lerp(yT, yB, i / N); raw.push([xout(y), y]); }
-    corners.push([raw.length, rcO]); raw.push([xout(yB), yB]);
-    corners.push([raw.length, rcI]); raw.push([xin(yB), yB]);
-    for (let i = N - 1; i > 0; i--) { const y = lerp(yT, yB, i / N); raw.push([xin(y), y]); }
-    const out = roundCorners(raw, corners);
-    return left ? out.map(([x, y]) => [-x, y]) : out;
+  // Exact, self-intersection-free rounded curved quad from 4 clockwise edge functions (t in 0..1):
+  // e0: TL->TR, e1: TR->BR, e2: BR->BL, e3: BL->TL; radii = [rTL, rTR, rBR, rBL] in HUD units.
+  function smoothCurvedQuad(edges, radii, steps = 20) {
+    const lens = edges.map(fn => {
+      let l = 0, p = fn(0);
+      for (let i = 1; i <= 16; i++) { const q = fn(i / 16); l += Math.hypot(q[0] - p[0], q[1] - p[1]); p = q; }
+      return Math.max(l, 1e-4);
+    });
+    const out = [];
+    for (let e = 0; e < 4; e++) {
+      const fn = edges[e], prev = edges[(e + 3) % 4];
+      const dIn = Math.min(0.42, radii[e] / lens[(e + 3) % 4]);
+      const dOut = Math.min(0.42, radii[e] / lens[e]);
+      const dNext = Math.min(0.42, radii[(e + 1) % 4] / lens[e]);
+      const A = prev(1 - dIn), C = fn(0), B = fn(dOut);
+      for (let s = 0; s <= 7; s++) {
+        const t = s / 7, u = 1 - t;
+        out.push([u * u * A[0] + 2 * u * t * C[0] + t * t * B[0], u * u * A[1] + 2 * u * t * C[1] + t * t * B[1]]);
+      }
+      const t0 = dOut, t1 = 1 - dNext;
+      if (t1 > t0 + 1e-4) {
+        const n = Math.max(2, Math.round(steps * (t1 - t0)));
+        for (let i = 1; i < n; i++) out.push(fn(lerp(t0, t1, i / n)));
+      }
+    }
+    return out;
   }
-  const capsXin = y => Math.sqrt(G.caps.rIn ** 2 - y * y);
-  const capsXout = y => { const c = G.caps; if (c.rOut) return Math.sqrt(c.rOut ** 2 - y * y); const ym = (c.yTop + c.yBot) / 2; return c.xOut - c.kOut * (y - ym) ** 2; };
-  const capsulePts = left => sideShape(capsXin, capsXout, G.caps.yTop, G.caps.yBot, G.caps.rcOut, G.caps.rcIn, left);
+  // Curved capsule (RECHARGE / DEPLOY) whose top and bottom edges follow the Halo arch slope smoothly,
+  // with clean rounded corners and zero self-intersection.
+  const CAPS_INSET_R = 0.85;
+  const capsRIn = () => G.caps.rIn + CAPS_INSET_R;
+  const capsROut = () => (G.caps.rOut || G.caps.xOut) - CAPS_INSET_R;
+  const capsXin = y => Math.sqrt(Math.max(1, capsRIn() ** 2 - y * y));
+  const capsXout = y => {
+    const c = G.caps;
+    if (c.rOut) return Math.sqrt(Math.max(1, capsROut() ** 2 - y * y));
+    const ym = (c.yTop + c.yBot) / 2;
+    return (c.xOut - CAPS_INSET_R) - c.kOut * (y - ym) ** 2;
+  };
+  // Sloped top & bottom y of the capsule so it follows the Halo arch smoothly edge-to-edge
+  const CAP_YT_IN = -16.2, CAP_YT_OUT = -13.6, CAP_YB_IN = 20.4, CAP_YB_OUT = 19.2;
+  const capsulePts = left => {
+    const pTL = [capsXin(CAP_YT_IN), CAP_YT_IN], pTR = [capsXout(CAP_YT_OUT), CAP_YT_OUT];
+    const pBR = [capsXout(CAP_YB_OUT), CAP_YB_OUT], pBL = [capsXin(CAP_YB_IN), CAP_YB_IN];
+    const edges = [
+      t => [lerp(pTL[0], pTR[0], t), lerp(pTL[1], pTR[1], t)],
+      t => { const y = lerp(CAP_YT_OUT, CAP_YB_OUT, t); return [capsXout(y), y]; },
+      t => [lerp(pBR[0], pBL[0], t), lerp(pBR[1], pBL[1], t)],
+      t => { const y = lerp(CAP_YB_IN, CAP_YT_IN, t); return [capsXin(y), y]; },
+    ];
+    const out = smoothCurvedQuad(edges, [2.2, 2.6, 2.6, 2.2], 24);
+    return left ? out.map(([x, y]) => [-x, y]) : out;
+  };
+  // Original un-modified capsule bounding silhouette for export_native.js frame cropping (zero alignment shift)
+  const origCapsuleMask = left => {
+    const c = G.caps, rIn = c.rIn, rOut = c.rOut || c.xOut;
+    const xi = y => Math.sqrt(Math.max(1, rIn * rIn - y * y));
+    const xo = y => c.rOut ? Math.sqrt(Math.max(1, rOut * rOut - y * y)) : (c.xOut - c.kOut * (y - (c.yTop + c.yBot) / 2) ** 2);
+    const edges = [
+      t => [lerp(xi(c.yTop), xo(c.yTop), t), c.yTop],
+      t => { const y = lerp(c.yTop, c.yBot, t); return [xo(y), y]; },
+      t => [lerp(xo(c.yBot), xi(c.yBot), t), c.yBot],
+      t => { const y = lerp(c.yBot, c.yTop, t); return [xi(y), y]; },
+    ];
+    const out = smoothCurvedQuad(edges, [c.rcIn, c.rcOut, c.rcOut, c.rcIn], 20);
+    return left ? out.map(([x, y]) => [-x, y]) : out;
+  };
   // slat geometry (right side; the left side mirrors x): centre line y = stripeY(i) + k * (x - xRef)
+  const STRIPE_INSET_R = 0.75;
   const stripeLine = (i, x) => stripeY(i) + G.stripes.k * (x - G.stripes.xRef);
   const circleX = (r, cy, i, off) => { let x = r; for (let n = 0; n < 6; n++) x = Math.sqrt(Math.max(0, r * r - (stripeLine(i, x) + off - cy) ** 2)); return x; };
-  const stripeXin = (i, off = 0) => circleX(G.stripes.rIn, G.stripes.cyIn, i, off);
-  const stripeXout = (i, off = 0) => circleX(G.stripes.rOut, G.stripes.cyOut, i, off);
+  const stripeXin = (i, off = 0) => circleX(G.stripes.rIn + STRIPE_INSET_R, G.stripes.cyIn, i, off);
+  const stripeXout = (i, off = 0) => circleX(G.stripes.rOut - STRIPE_INSET_R, G.stripes.cyOut, i, off);
   const slatPts = (i, left, grow = 0) => {
-    const s = G.stripes, h = s.th / 2 + grow, xa = stripeXin(i) - grow, xb = stripeXout(i) + grow;
+    const s = G.stripes, h = (s.th - 0.32) / 2 + grow, xa = stripeXin(i) - grow, xb = stripeXout(i) + grow;
     const pts = [[xa, stripeLine(i, xa) - h], [xb, stripeLine(i, xb) - h], [xb, stripeLine(i, xb) + h], [xa, stripeLine(i, xa) + h]];
     return left ? pts.map(([x, y]) => [-x, y]) : pts;
   };
   const stripePanelPts = left => {
-    const s = G.stripes, pad = s.pad, top = s.n - 1, pts = [];
-    const xi0 = stripeXin(top, -s.th / 2 - pad) - pad, xo0 = stripeXout(top, -s.th / 2 - pad) + pad;
-    const xi1 = stripeXin(0, s.th / 2 + pad) - pad, xo1 = stripeXout(0, s.th / 2 + pad) + pad;
-    const yT = x => stripeLine(top, x) - s.th / 2 - pad, yB = x => stripeLine(0, x) + s.th / 2 + pad;
-    const arc = (r, cy, ya, yb) => { for (let j = 0; j <= 16; j++) { const y = lerp(ya, yb, j / 16); pts.push([Math.sqrt(r * r - (y - cy) ** 2), y]); } };
-    arc(s.rIn - pad, s.cyIn, yT(xi0), yB(xi1));
-    arc(s.rOut + pad, s.cyOut, yB(xo1), yT(xo0));
-    return left ? pts.map(([x, y]) => [-x, y]) : pts;
+    const s = G.stripes, pad = 0.80, top = s.n - 1, h = (s.th - 0.32) / 2;
+    const rIn = s.rIn + STRIPE_INSET_R - pad, rOut = s.rOut - STRIPE_INSET_R + pad;
+    const xi0 = stripeXin(top, -h - pad) - pad, xo0 = stripeXout(top, -h - pad) + pad;
+    const xi1 = stripeXin(0, h + pad) - pad, xo1 = stripeXout(0, h + pad) + pad;
+    const yT0 = stripeLine(top, xi0) - h - pad, yT1 = stripeLine(top, xo0) - h - pad;
+    const yB0 = stripeLine(0, xi1) + h + pad, yB1 = stripeLine(0, xo1) + h + pad;
+    const arcPt = (r, cy, y) => [Math.sqrt(Math.max(1, r * r - (y - cy) ** 2)), y];
+    const edges = [
+      t => [lerp(arcPt(rIn, s.cyIn, yT0)[0], arcPt(rOut, s.cyOut, yT1)[0], t), lerp(yT0, yT1, t)],
+      t => arcPt(rOut, s.cyOut, lerp(yT1, yB1, t)),
+      t => [lerp(arcPt(rOut, s.cyOut, yB1)[0], arcPt(rIn, s.cyIn, yB0)[0], t), lerp(yB1, yB0, t)],
+      t => arcPt(rIn, s.cyIn, lerp(yB0, yT0, t)),
+    ];
+    const rounded = smoothCurvedQuad(edges, [2.2, 2.2, 2.2, 2.2], 20);
+    return left ? rounded.map(([x, y]) => [-x, y]) : rounded;
   };
 
   // ---------- backdrop band and wing frames
-  const BAND_TOP = cam ? CAM.bandTop : [[-215, 65], [-182, 44], [-160, 29], [-138, 15], [-117, 4], [-97, -4], [-77, -10.5], [-58, -17], [-36, -24], [0, -27], [36, -24], [58, -17], [76, -11.5], [98, -6], [122, 3], [146, 15], [168, 29], [190, 45], [220, 68]];
-  const BAND_BOT = cam ? CAM.bandBot : [[220, 112], [188, 90], [166, 75], [144, 62], [122, 51], [100, 40], [80, 30], [64, 24.5], [36, 28], [0, 29], [-36, 28], [-64, 25.5], [-80, 32], [-100, 42], [-122, 54], [-144, 66], [-166, 79], [-186, 91], [-215, 108]];
+  const BAND_TOP = cam ? CAM.bandTop : [[-215, 65], [-182, 44], [-160, 29], [-138, 15], [-117, 4], [-97, -4], [-77, -11.5], [-58, -18.8], [-36, -24.8], [0, -27], [36, -24.8], [58, -18.8], [76, -11.8], [98, -6], [122, 3], [146, 15], [168, 29], [190, 45], [220, 68]];
+  const BAND_BOT = cam ? CAM.bandBot : [[220, 112], [188, 90], [166, 75], [144, 62], [122, 51], [100, 41.0], [80, 34.0], [64, 29.4], [36, 28.4], [0, 28.8], [-36, 28.4], [-64, 29.4], [-80, 34.4], [-100, 42.5], [-122, 54], [-144, 66], [-166, 79], [-186, 91], [-215, 108]];
   const bandTopPts = smoothPts(BAND_TOP, false), bandBotPts = smoothPts(BAND_BOT, false);
   const yAt = (pts, x) => { for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i]; if ((x - a[0]) * (x - b[0]) <= 0 && a[0] !== b[0]) return lerp(a[1], b[1], (x - a[0]) / (b[0] - a[0])); } return pts[x < 0 ? 0 : pts.length - 1][1]; };
-
-  function drawBand(g) {
+  const bandX0 = bandTopPts[0][0], bandX1 = bandTopPts[bandTopPts.length - 1][0];
+  function hFadeGrad(g, x0, x1, rgb, maxA, midA) {
+    const gr = g.createLinearGradient(x0, 0, x1, 0);
+    const m = midA ?? maxA;
+    gr.addColorStop(0.00, `rgba(${rgb},0)`);
+    gr.addColorStop(0.08, `rgba(${rgb},${(maxA * 0.24).toFixed(3)})`);
+    gr.addColorStop(0.18, `rgba(${rgb},${(maxA * 0.78).toFixed(3)})`);
+    gr.addColorStop(0.32, `rgba(${rgb},${maxA.toFixed(3)})`);
+    gr.addColorStop(0.50, `rgba(${rgb},${m.toFixed(3)})`);
+    gr.addColorStop(0.68, `rgba(${rgb},${maxA.toFixed(3)})`);
+    gr.addColorStop(0.82, `rgba(${rgb},${(maxA * 0.78).toFixed(3)})`);
+    gr.addColorStop(0.92, `rgba(${rgb},${(maxA * 0.24).toFixed(3)})`);
+    gr.addColorStop(1.00, `rgba(${rgb},0)`);
+    return gr;
+  }
+  function drawBandMask(g) {
     g.save(); g.translate(G.band.dx, G.band.dy);
     poly(g, [...bandTopPts, ...bandBotPts]);
-    const gr = g.createLinearGradient(0, -27, 0, 70); gr.addColorStop(0, P.bandTop); gr.addColorStop(0.16, P.band); gr.addColorStop(1, P.bandBot);
-    g.fillStyle = gr; g.fill();
-    poly(g, bandTopPts, false);
-    g.strokeStyle = P.bandGlow; g.lineWidth = 3.0; g.stroke();
-    g.strokeStyle = P.bandEdge; g.lineWidth = 0.45; g.stroke();
+    g.fillStyle = '#000'; g.fill();
+    g.strokeStyle = '#000'; g.lineWidth = 3.2; g.stroke();
     g.restore();
   }
-  // Wing frame: follows the band edges (inset) from the far end to a slightly tilted inner end with rounded corners.
+  function drawBand(g) {
+    g.save(); g.translate(G.band.dx, G.band.dy);
+    // Smooth smoked-glass arch fill that dissolves gracefully to 0% opacity at both outer tips
+    poly(g, [...bandTopPts, ...bandBotPts]);
+    g.fillStyle = hFadeGrad(g, bandX0, bandX1, '8,20,36', 0.44, 0.54);
+    g.fill();
+    // Clip subtle upper-glass sheen & inner bottom glow cleanly to the band silhouette
+    g.save(); poly(g, [...bandTopPts, ...bandBotPts]); g.clip();
+    // Delicate upper-edge broadcast glass reflection
+    const sheen = g.createLinearGradient(0, -28, 0, 18);
+    sheen.addColorStop(0, 'rgba(170,224,255,0.12)');
+    sheen.addColorStop(0.38, 'rgba(120,196,255,0.03)');
+    sheen.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = sheen; g.fillRect(bandX0 - 4, -36, bandX1 - bandX0 + 8, 60);
+    // Soft luminous bottom edge fading cleanly to 0% at both tips
+    poly(g, bandBotPts, false);
+    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '48,162,248', 0.22, 0.26); g.lineWidth = 3.8; g.stroke();
+    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '142,216,255', 0.56, 0.68); g.lineWidth = 0.65; g.stroke();
+    g.restore();
+    // Silky luminous silver-blue top arch rail dissolving smoothly at both outer ends
+    poly(g, bandTopPts, false);
+    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '64,184,255', 0.28, 0.34); g.lineWidth = 3.2; g.stroke();
+    g.strokeStyle = hFadeGrad(g, bandX0, bandX1, '208,240,255', 0.84, 0.94); g.lineWidth = 0.65; g.stroke();
+    g.restore();
+  }
+  // Wing frame: open-ended U-curve following the band edges (inset) with clean quadratic-Bezier rounded inner corners
+  // (zero gaps, zero vertical closing line at the outer ends).
   function wingPts(W, side) {
     const N = 60, yT = x => yAt(bandTopPts, x) + W.top, yB = x => yAt(bandBotPts, x) - W.bot;
     const h = yB(W.xi) - yT(W.xi), k = Math.tan(W.tilt * D) * h / 2;
     const xTop = W.xi + side * k, xBot = W.xi - side * k;
-    const raw = [];
-    for (let i = 0; i <= N; i++) { const x = lerp(W.xFar, xTop, i / N); raw.push([x, yT(x)]); }
-    const cTop = raw.length - 1;
-    for (let i = 1; i < 8; i++) { const t = i / 8; raw.push([lerp(xTop, xBot, t), lerp(yT(xTop), yB(xBot), t)]); }
-    const cBot = raw.length; raw.push([xBot, yB(xBot)]);
-    for (let i = 1; i <= N; i++) { const x = lerp(xBot, W.xFar, i / N); raw.push([x, yB(x)]); }
-    return roundCorners(raw, [[cTop, W.r], [cBot, W.r]]);
+    const pT = [xTop, yT(xTop)], pB = [xBot, yB(xBot)];
+    const r = W.r;
+    const dxI = pB[0] - pT[0], dyI = pB[1] - pT[1], lI = Math.hypot(dxI, dyI);
+    const tR = Math.min(0.4, r / lI);
+    const pTi = [pT[0] + dxI * tR, pT[1] + dyI * tR];
+    const pBi = [pB[0] - dxI * tR, pB[1] - dyI * tR];
+    // Step along top rail stopping r units short of xTop
+    const xTopStop = xTop + side * r;
+    const xBotStop = xBot + side * r;
+    const out = [];
+    for (let i = 0; i <= N; i++) { const x = lerp(W.xFar, xTopStop, i / N); out.push([x, yT(x)]); }
+    const A1 = out[out.length - 1];
+    for (let s = 1; s <= 7; s++) { const t = s / 7, u = 1 - t; out.push([u * u * A1[0] + 2 * u * t * pT[0] + t * t * pTi[0], u * u * A1[1] + 2 * u * t * pT[1] + t * t * pTi[1]]); }
+    out.push(pBi);
+    const B2 = [xBotStop, yB(xBotStop)];
+    for (let s = 1; s <= 7; s++) { const t = s / 7, u = 1 - t; out.push([u * u * pBi[0] + 2 * u * t * pB[0] + t * t * B2[0], u * u * pBi[1] + 2 * u * t * pB[1] + t * t * B2[1]]); }
+    for (let i = 1; i <= N; i++) { const x = lerp(xBotStop, W.xFar, i / N); out.push([x, yB(x)]); }
+    return out;
+  }
+  function wingFadeGrad(g, W, side, rgb, aIn) {
+    const gr = g.createLinearGradient(W.xi, 0, W.xFar, 0);
+    gr.addColorStop(0.00, `rgba(${rgb},${aIn.toFixed(3)})`);
+    gr.addColorStop(0.55, `rgba(${rgb},${(aIn * 0.82).toFixed(3)})`);
+    gr.addColorStop(0.80, `rgba(${rgb},${(aIn * 0.28).toFixed(3)})`);
+    gr.addColorStop(1.00, `rgba(${rgb},0)`);
+    return gr;
   }
   function drawWing(g, W, side) {
     const pts = wingPts(W, side);
     g.save(); g.translate(G.band.dx, G.band.dy);
-    poly(g, pts); g.fillStyle = P.wingFill; g.fill();
-    g.strokeStyle = P.wingLine; g.lineWidth = 0.42; g.stroke();
+    // Ultra-subtle frosted glass fill fading smoothly to 0% at the outer tip
+    poly(g, pts, true);
+    g.fillStyle = wingFadeGrad(g, W, side, '10,24,42', 0.22);
+    g.fill();
+    // Open U-shaped gossamer inner hairline (NO vertical line closing the outer end!)
+    poly(g, pts, false);
+    g.strokeStyle = wingFadeGrad(g, W, side, '70,186,255', 0.14); g.lineWidth = 1.6; g.stroke();
+    g.strokeStyle = wingFadeGrad(g, W, side, '172,226,255', 0.48); g.lineWidth = 0.52; g.stroke();
     g.restore();
   }
 
   // ---------- centre cluster
   function drawStripes(g, left, value, on, onTop) {
     const s = G.stripes, pts = stripePanelPts(left);
-    poly(g, pts); g.fillStyle = P.stripePanel; g.fill(); g.strokeStyle = 'rgba(120,160,180,0.30)'; g.lineWidth = 0.45; g.stroke();
+    poly(g, pts); g.fillStyle = P.stripePanel; g.fill();
+    g.strokeStyle = 'rgba(136,204,248,0.22)'; g.lineWidth = 0.42; g.stroke();
     const lit = Math.round(value * s.n);
     for (let i = 0; i < s.n; i++) {
       const isOn = i < lit;
@@ -337,20 +449,16 @@ const HALO_MAKE = (LAYOUT) => {
   // '#RRGGBB' at k of its brightness
   const scaleHex = (hex, k) => `rgb(${[1, 3, 5].map(j => Math.round(parseInt(hex.slice(j, j + 2), 16) * k)).join(',')})`;
   function drawSlat(g, left, i, col, lit) {
-    // lit slats (V20): the gap down to the slat below (always lit too, as the lit slats run up from slat 0) in the
-    // slat's colour at half brightness, as the reference's lit gaps measure (20,113,95) against its slats' (49,219,195);
-    // this replaced an earlier build's 22 % glow round each lit slat. Each lit slat is one sprite in the game, so the gap is part of it.
     if (lit && i > 0) {
-      const a = slatPts(i - 1, left, 0.15), b = slatPts(i, left, 0.15);   // 0.15: clear of the slats' 0.3 outline
-      poly(g, [a[0], a[1], b[2], b[3]]); g.fillStyle = scaleHex(col, G.stripes.litGap); g.fill();
+      const a = slatPts(i - 1, left, 0.12), b = slatPts(i, left, 0.12);
+      poly(g, [a[0], a[1], b[2], b[3]]); g.fillStyle = scaleHex(col, G.stripes.litGap * 0.72); g.fill();
     }
-    // one flat colour along the whole slat (V20: the reference keeps its lightness end to end; the old
-    // top-to-bottom shade darkened the sloping slats toward their outer ends)
-    poly(g, slatPts(i, left)); g.fillStyle = col; g.fill(); g.strokeStyle = col; g.lineWidth = 0.3; g.stroke();
+    poly(g, slatPts(i, left)); g.fillStyle = col; g.fill();
+    g.strokeStyle = lit ? col : 'rgba(110,176,220,0.14)'; g.lineWidth = 0.25; g.stroke();
   }
 
   function drawCapsule(g, left, level, word) {
-    const c = G.caps, pts = capsulePts(left), y0 = c.yTop, y1 = c.yBot;
+    const c = G.caps, pts = capsulePts(left), y0 = CAP_YT_IN, y1 = CAP_YB_IN;
     poly(g, pts); g.fillStyle = P.capOff; g.fill();
     const lv = Math.min(1, Math.max(0, level)), topY = lerp(y1, y0, lv);
     if (lv > 0.02) {
@@ -360,16 +468,15 @@ const HALO_MAKE = (LAYOUT) => {
     }
     const lit = lv > 0.5;
     poly(g, pts);
-    if (lit) { g.strokeStyle = 'rgba(80,200,255,0.25)'; g.lineWidth = 2.2; g.stroke(); }
-    g.strokeStyle = lit ? P.capOnLine : P.capOffLine; g.lineWidth = 0.6; g.stroke();
-    const n = word.length, ya = y0 + 3.6, yb = y1 - 3.6;
+    if (lit) { g.strokeStyle = 'rgba(72,212,255,0.34)'; g.lineWidth = 1.9; g.stroke(); }
+    g.strokeStyle = lit ? P.capOnLine : P.capOffLine; g.lineWidth = 0.52; g.stroke();
+    const n = word.length, yTopMid = (CAP_YT_IN + CAP_YT_OUT) / 2 + 2.8, yBotMid = (CAP_YB_IN + CAP_YB_OUT) / 2 - 2.8;
     [...word].forEach((ch, i) => {
       const t = n === 1 ? 0.5 : i / (n - 1);
-      let x, y;
-      if (c.txtR) { const a = lerp(c.txtA0, c.txtA1, t) * D; x = c.txtR * Math.cos(a); y = c.txtR * Math.sin(a); }
-      else { y = lerp(ya, yb, t); x = (capsXin(y) + capsXout(y)) / 2; }
+      const y = lerp(yTopMid, yBotMid, t);
+      let x = (capsXin(y) + capsXout(y)) / 2;
       if (left) x = -x;
-      text(g, ch, x, y, c.fs, lv > 0.02 && y >= topY ? P.capOnText : P.capOffText, { w: 760 });
+      text(g, ch, x, y, c.fs * 0.90, lv > 0.02 && y >= topY ? P.capOnText : P.capOffText, { w: 740 });
     });
   }
 
@@ -432,12 +539,47 @@ const HALO_MAKE = (LAYOUT) => {
     lines(() => true); g.strokeStyle = vGrad(g, -d.inner, d.inner, P.mesh); g.stroke();
     lines(k => (k & 1) === 0); g.strokeStyle = vGrad(g, -d.inner, d.inner, P.mesh2); g.stroke();
     g.restore();
-    // rings (V21): the bright ring at rim with its soft edge, the thin light ring further out; both neutral,
-    // fading toward the bottom and a little at the very top (from 60 degrees up), like the reference's
-    g.beginPath(); g.arc(0, 0, d.rim, 0, 2 * Math.PI);
-    g.strokeStyle = vGrad(g, -d.rim, d.rim, P.ringGlow); g.lineWidth = 2.4; g.stroke();
-    g.strokeStyle = vGrad(g, -d.rim, d.rim, P.ring); g.lineWidth = d.ring; g.stroke();
-    if (d.light) { g.beginPath(); g.arc(0, 0, d.light, 0, 2 * Math.PI); g.strokeStyle = vGrad(g, -d.light, d.light, P.ringLight); g.lineWidth = d.lightW; g.stroke(); }
+    // Premium outer luminous metallic-blue halo rim + clean dark-glass recessed bezel channel (no blocky dividers)
+    if (d.light) {
+      g.save();
+      g.beginPath(); g.arc(0, 0, d.light, 0, 2 * Math.PI);
+      g.strokeStyle = vGrad(g, -d.light, d.light, [[0, 'rgba(52,168,255,0.42)'], [0.5, 'rgba(32,128,232,0.22)'], [1, 'rgba(18,74,158,0.06)']]);
+      g.lineWidth = 3.2; g.stroke();
+      g.strokeStyle = vGrad(g, -d.light, d.light, [[0, 'rgba(148,224,255,0.95)'], [0.45, 'rgba(72,178,255,0.78)'], [0.85, 'rgba(42,130,220,0.34)'], [1, 'rgba(28,96,178,0.12)']]);
+      g.lineWidth = Math.max(d.lightW, 1.05); g.stroke();
+      g.restore();
+    }
+    // Recessed smoked-glass track along the 260-deg RPM sweep
+    g.save(); g.lineCap = 'round';
+    const a0 = RB_A0 * D, a1 = (RB_A0 + RB_SPAN) * D;
+    g.beginPath(); g.arc(0, 0, d.rim, a0, a1);
+    g.strokeStyle = 'rgba(4,12,24,0.62)'; g.lineWidth = 3.4; g.stroke();
+    g.strokeStyle = 'rgba(72,158,230,0.30)'; g.lineWidth = 1.3; g.stroke();
+    g.restore();
+  }
+  const RB_N = 12, RB_A0 = 140, RB_SPAN = 260;
+  function _strokeNeonArc(g, r, a0, a1, outerGlow, midGlow, body, core, wScale) {
+    const s = wScale || 1.0;
+    g.save(); g.lineCap = 'round';
+    g.beginPath(); g.arc(0, 0, r, a0, a1);
+    g.strokeStyle = outerGlow; g.lineWidth = 6.8 * s; g.stroke();
+    g.strokeStyle = midGlow; g.lineWidth = 4.0 * s; g.stroke();
+    g.strokeStyle = body; g.lineWidth = 2.45 * s; g.stroke();
+    g.strokeStyle = core; g.lineWidth = 0.95 * s; g.stroke();
+    g.restore();
+  }
+  // Mutually exclusive smooth continuous arc for level (i+1)/12:
+  // Stays pure sleek luminous ice-blue while filling through the gear — ONLY turns crimson-red at ready-to-shift (rb_max)!
+  function drawRpmBezelSeg(g, i) {
+    const r = G.disc.rim;
+    const f = (i + 1) / (RB_N + 0.5);
+    const a0 = RB_A0 * D, a1 = (RB_A0 + RB_SPAN * f) * D;
+    _strokeNeonArc(g, r, a0, a1, 'rgba(0,156,255,0.24)', 'rgba(42,192,255,0.44)', '#28BAFF', '#C8F2FF', 0.96);
+  }
+  // Full 260-deg solid glowing F1 crimson-red bezel — ONLY shown when ready to gear up (>= 92.5% limiter, no flashing)
+  function drawRpmBezelMax(g) {
+    const r = G.disc.rim, a0 = RB_A0 * D, a1 = (RB_A0 + RB_SPAN) * D;
+    _strokeNeonArc(g, r, a0, a1, 'rgba(255,22,42,0.34)', 'rgba(255,34,54,0.60)', '#FF2236', '#FFC4CA', 1.06);
   }
   function drawBoost(g, on) {
     const B = G.boost;
@@ -488,6 +630,15 @@ const HALO_MAKE = (LAYOUT) => {
     const C = carClass(st);
     drawDisc(g);
     if (gOn(st)) return drawGDial(g, st);
+    // Dynamic RPM bezel ring (smooth ice-blue fill 60%..92.5%, turns solid red ONLY when ready to gear up >= 92.5%)
+    if (Number.isFinite(st.rpm)) {
+      if (st.rpm >= 0.925) {
+        drawRpmBezelMax(g);
+      } else {
+        const lv = Math.round(Math.max(0, Math.min(1, (st.rpm - 0.60) / 0.325)) * RB_N);
+        if (lv >= 1) drawRpmBezelSeg(g, lv - 1);
+      }
+    }
     text(g, 'KM/H', 0, G.kmh.y, G.kmh.fs, P.label, { tr: G.kmh.tr });
     speedText(g, st.kmh);
     if (C.pills === 'boost_ot') { drawBoost(g, st.boost); drawOT(g, st.ot); }
@@ -620,12 +771,13 @@ const HALO_MAKE = (LAYOUT) => {
     g.strokeStyle = color; g.lineWidth = w; g.lineCap = 'round'; g.stroke();
   }
   function drawRails(g, colour) {
-    // driver card: team-colour rails above and below the driver's lane, closed at the far end, open toward the dial
+    // Sleek refined driver card rail (slim stroke + subtle glow; tinted by team colour in game)
     const n = G.names;
     g.beginPath();
     for (let i = 0; i <= 30; i++) { const p = lanePoint(n, lerp(n.railA0 ?? 0, n.cardEnd, i / 30), n.lineA); i ? g.lineTo(...p) : g.moveTo(...p); }
     for (let i = 0; i <= 30; i++) g.lineTo(...lanePoint(n, lerp(n.cardEnd, n.railB0 ?? 4, i / 30), n.lineB));
-    g.strokeStyle = colour; g.lineWidth = n.lineW; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke();
+    g.save(); g.globalAlpha = 0.25; g.strokeStyle = colour; g.lineWidth = n.lineW * 1.4; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(); g.restore();
+    g.strokeStyle = colour; g.lineWidth = n.lineW * 0.65; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke();
   }
   function drawNames(g, st) {
     const n = G.names, team = st.team || '#27F4D2';
@@ -700,7 +852,22 @@ const HALO_MAKE = (LAYOUT) => {
   function drawGearMarker(g) { const q = G.gears; if (!(q.mr > 0)) return; g.beginPath(); g.arc(q.mx, q.my, q.mr, 0, 7); g.strokeStyle = 'rgba(140,160,172,0.75)'; g.lineWidth = 0.4; g.stroke(); }
   function drawGearDigit(g, i, on) {
     const q = G.gears, t = i / 8, [x, y] = gearPt(t, 0), [tx, ty] = bezTan(q.p0, q.p1, q.p2, t);
-    text(g, 'N12345678'[i], x, y, on ? q.fsOn : q.fs, on ? P.white : P.gearDim, { rot: Math.atan2(ty, tx) / D, lean: q.lean, w: on ? (q.wOn ?? 780) : (q.w ?? 700) });
+    const rotDeg = Math.atan2(ty, tx) / D;
+    if (on) {
+      // Glowing cyan-blue active gear pill (inspired by F1 broadcast halo)
+      const pw = q.fsOn * 0.88, ph = q.fsOn * 0.94;
+      g.save(); g.translate(x, y); frame(g, rotDeg, q.lean);
+      rr(g, -pw / 2, -ph / 2, pw, ph, 1.0);
+      g.fillStyle = P.gearOnGlow; g.fill();
+      const gg = g.createLinearGradient(0, -ph / 2, 0, ph / 2);
+      gg.addColorStop(0, '#72E4FF'); gg.addColorStop(1, P.gearOnBg);
+      rr(g, -pw / 2 + 0.35, -ph / 2 + 0.35, pw - 0.7, ph - 0.7, 0.8);
+      g.fillStyle = gg; g.fill();
+      g.restore();
+      text(g, 'N12345678'[i], x, y, q.fsOn * 0.92, P.gearOnText, { rot: rotDeg, lean: q.lean, w: 800 });
+    } else {
+      text(g, 'N12345678'[i], x, y, q.fs, P.gearDim, { rot: rotDeg, lean: q.lean, w: q.w ?? 700 });
+    }
   }
   // Suggested gear (0.2.3): the game's gear suggestion on the strip. The suggested digit i in the hint colour at the
   // lit digit's size and weight with a soft glow, and a small triangle on the side away from the RPM line, its tip
@@ -741,8 +908,12 @@ const HALO_MAKE = (LAYOUT) => {
   // ---------- centre cluster (capsules, stripes, labels, dial), scaled about the dial centre
   function drawCentreLabels(g) {
     const B = G.brakeLbl, T = G.throttleLbl;
-    text(g, 'BRAKE', B.x, B.y, G.lblFs, '#E9EEF1', { rot: B.rot, lean: B.lean, tr: B.tr ?? 0.35 });
-    text(g, 'THROTTLE', T.x, T.y, G.lblFs, '#E9EEF1', { rot: T.rot, lean: T.lean, tr: T.tr ?? 0.35 });
+    const m = g.getTransform(), k = Math.hypot(m.a, m.b);
+    g.save();
+    g.shadowColor = 'rgba(2,8,16,0.95)'; g.shadowBlur = 2.4 * k; g.shadowOffsetY = 0.35 * k;
+    text(g, 'BRAKE', B.x, B.y, G.lblFs, '#F4F8FC', { rot: B.rot, lean: B.lean, tr: B.tr ?? 0.35, w: 760 });
+    text(g, 'THROTTLE', T.x, T.y, G.lblFs, '#F4F8FC', { rot: T.rot, lean: T.lean, tr: T.tr ?? 0.35, w: 760 });
+    g.restore();
   }
   // design plane -> HUD units: centreScale, and for theme 'screenshot' the Interlagos camera's affine view
   function centreFrame(g, st) {
@@ -775,8 +946,8 @@ const HALO_MAKE = (LAYOUT) => {
 
   // Static / moving pieces for the addon's texture export (export.html).
   const internals = {
-    D, FONT, CAP, text, frame, rr, poly, lerp, bez, bezTan, lanePoint, laneAngle, laneText, capsulePts, stripePanelPts,
-    capsXin, capsXout, stripeXin, stripeXout, stripeLine, slatPts, slatColour, stripeY, stripePitch, drawSlat, centreFrame, drawCentreLabels, drawBand, drawWing, drawStripes, drawCapsule, drawCollar, drawDisc, drawBoost, drawOT, speedText,
+    D, FONT, CAP, text, frame, rr, poly, lerp, bez, bezTan, lanePoint, laneAngle, laneText, capsulePts, origCapsuleMask, stripePanelPts,
+    capsXin, capsXout, stripeXin, stripeXout, stripeLine, slatPts, slatColour, stripeY, stripePitch, drawSlat, centreFrame, drawCentreLabels, drawBand, drawBandMask, drawWing, drawStripes, drawCapsule, drawCollar, drawDisc, drawRpmBezelSeg, drawRpmBezelMax, drawBoost, drawOT, speedText,
     mphText, battInterior, battFill, battOutline, battBolt, drawGStatic, gText, gSlots, gChar, gOn, gView, gFormat, drawGRings, drawGLabel,
     drawGArc, drawGSeg, drawGBlock, gSector, turnArrow, drawTurnArrow, drawTurnNumber,
     drawTurnLabel, drawRails, drawAeroLabel, drawAeroBars, drawAeroBar, bandTopPts, gearPt, drawGearTrack, drawRpmBar, drawGearMarker,

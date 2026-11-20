@@ -1467,12 +1467,15 @@ static void test_sgear()
         m.update(gs::GameState{}, 1 / 60.0, HudConfig{});
         CHECK(!m.view().live && !m.view().sgear);
     }
-    // the older leaves keep their places: the 18 new ones come last
+    // the older leaves keep their places: the 18 sgear leaves sit right before the 13 RPM bezel leaves
     {
         Leaves L;
         publish(L, v, 0.0);
         const std::vector<std::string> p = L.paths();
-        CHECK(p.size() >= 18 && p[p.size() - 18] == "view_model_data.hud_halo_su0" && p.back() == "view_model_data.hud_halo_sd8");
+        const size_t tail = size_t(kRpmBezel + 1);
+        CHECK(p.size() >= 18 + tail && p[p.size() - 18 - tail] == "view_model_data.hud_halo_su0" &&
+              p[p.size() - 1 - tail] == "view_model_data.hud_halo_sd8" &&
+              p[p.size() - tail] == "view_model_data.hud_halo_rb01" && p.back() == "view_model_data.hud_halo_rbmax");
     }
 }
 
@@ -1622,7 +1625,7 @@ static void test_leaf_names(const char *out_path)
     publish(L, v, 0.0);
     const std::vector<std::string> p = L.paths();
     CHECK(p.size() == size_t(4 + 9 + 2 * kStripes + 2 * kCapLevels + 3 + 4 + kRivalSlots + 3 + 20 + kGSegments + 2 * kGAxes +
-                             1 + 2 * kCapLevels + 2 * kGearPlaces));
+                             1 + 2 * kCapLevels + 2 * kGearPlaces + kRpmBezel + 1));
     if (!out_path)
         return;
     FILE *f = std::fopen(out_path, "w");
@@ -1708,6 +1711,59 @@ static void bench_frame(bool watching = false)
                 pct(plain_us, 0.5), pct(plain_us, 0.99), pct(scan_us, 0.5), pct(scan_us, 0.99));
 }
 
+static void test_rpm_bezel()
+{
+    HudModel m;
+    gs::GameState s;
+    s.compatible = true;
+    s.session.active = true;
+    s.vehicle.ok = true;
+    s.vehicle.player = true;
+    s.power_unit.rpm_ok = true;
+    s.power_unit.limiter_ok = true;
+    s.power_unit.limiter_rpm = 13100.f;
+
+    // Idle / low RPM (< 60% limiter): 0 lit, no red max
+    s.power_unit.rpm = 5500.f;
+    m.update(s, 0.016, HudConfig{});
+    CHECK(m.view().rpm_ok && m.view().rpm_level == 0 && !m.view().rpm_shift);
+    {
+        Leaves L;
+        publish(L, m.view(), 0.0);
+        CHECK(!L.wanted("rb01") && !L.wanted("rb12") && !L.wanted("rbmax"));
+    }
+
+    // Mid powerband (~76.25% limiter -> level 6, ice-blue, NOT red yet)
+    s.power_unit.rpm = 13100.f * 0.7625f;
+    m.update(s, 0.016, HudConfig{});
+    CHECK(m.view().rpm_level == 6 && !m.view().rpm_shift);
+    {
+        Leaves L;
+        publish(L, m.view(), 0.016);
+        CHECK(!L.wanted("rb01") && !L.wanted("rb05") && L.wanted("rb06") && !L.wanted("rb07") && !L.wanted("rbmax"));
+    }
+
+    // High revs but not yet ready to shift (90% = 11,790 RPM): still ice-blue filling, NOT red yet
+    s.power_unit.rpm = 13100.f * 0.90f;
+    m.update(s, 0.016, HudConfig{});
+    CHECK(!m.view().rpm_shift && m.view().rpm_level >= 10);
+
+    // Ready to gear up (>= 92.5% limiter, ~12,120+ RPM): solid red rbmax, NO flashing
+    s.power_unit.rpm = 12200.f;
+    for (int i = 0; i < 16; ++i) {
+        m.update(s, 0.016, HudConfig{});
+        CHECK(m.view().rpm_shift && m.view().rpm_level == 0);
+        Leaves L;
+        publish(L, m.view(), 0.032 + i * 0.016);
+        CHECK(L.wanted("rbmax") && !L.wanted("rb12"));
+    }
+
+    // Upshift drop: immediately drops back to mid-arc ice-blue
+    s.power_unit.rpm = 9500.f;
+    m.update(s, 0.016, HudConfig{});
+    CHECK(!m.view().rpm_shift && m.view().rpm_level >= 3 && m.view().rpm_level <= 6);
+}
+
 int main(int argc, char **argv)
 {
     test_decode();
@@ -1727,6 +1783,7 @@ int main(int argc, char **argv)
     test_classes();
     test_sgear();
     test_sgear_hold();
+    test_rpm_bezel();
     test_leaf_names(argc > 1 ? argv[1] : nullptr);
     bench_frame();
     bench_frame(true);

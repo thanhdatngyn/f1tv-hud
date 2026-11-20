@@ -152,6 +152,20 @@ void HudModel::update(const gs::GameState &s, double dt, const HudConfig &cfg)
     // Boost: the driver has the game's on-demand maximum-deployment mode selected
     v.boost = s.energy.mode_ok && s.energy.mode == 2;
 
+    // Speed-dial RPM bezel: fills smoothly in ice-blue across 60%..92.5% of rev limiter,
+    // and turns solid glowing crimson-red ONLY when ready to shift up (>= 92.5% limiter, ~12,120 RPM on 13,100 limiter).
+    v.rpm_ok = s.power_unit.rpm_ok;
+    if (v.rpm_ok) {
+        const float lim = (s.power_unit.limiter_ok && s.power_unit.limiter_rpm > 3000.f) ? s.power_unit.limiter_rpm : 13100.f;
+        const float frac = s.power_unit.rpm / lim;
+        const float norm = std::clamp((frac - 0.60f) / (0.925f - 0.60f), 0.f, 1.f);
+        v.rpm_shift = frac >= 0.925f;
+        v.rpm_level = v.rpm_shift ? 0 : int(std::lround(norm * 12.f));
+    } else {
+        v.rpm_level = 0;
+        v.rpm_shift = false;
+    }
+
     // the next turn, from the game's lap distance
     v.turn.clear();
     if (cfg.show_turns && s.progress.ok && s.session.track_ok) {

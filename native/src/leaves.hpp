@@ -19,6 +19,7 @@ namespace halo {
 
 constexpr int kStripes = 10;    // brake / throttle slats (2026 broadcast, late-season version)
 constexpr int kCapLevels = 16;  // recharge / deploy capsule steps
+constexpr int kRpmBezel = 12;   // progressive RPM shift-light bezel segments around the speed dial
 constexpr int kRivalSlots = 24; // rival lane slots, one per vehicle id
 constexpr int kWriteBudget = 40;
 constexpr double kRefresh = 2.0;
@@ -204,6 +205,12 @@ inline int publish(Leaves &L, const View &v, double now)
     publish_gmeter(L, v);
     publish_classes(L, v);
     publish_sgear(L, v);
+    // Speed-dial RPM bezel (mutually exclusive smooth continuous arcs rb01..rb12, plus solid full red rbmax)
+    const bool rb_max = live && v.rpm_ok && v.rpm_shift;
+    const int rbl = (live && v.rpm_ok && !rb_max) ? std::clamp(v.rpm_level, 0, kRpmBezel) : 0;
+    for (int i = 1; i <= kRpmBezel; ++i)
+        L.want("rb" + two(i), rbl == i);
+    L.want("rbmax", rb_max);
     return L.flush(now);
 }
 

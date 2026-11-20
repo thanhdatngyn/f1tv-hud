@@ -146,36 +146,41 @@
   }
 
   const P = {
-    panel: [20, 22, 30], panelAlpha: 0.81, // own colour + opacity of the row panel (INT fit, r 0.96-0.98)
-    strip: '#13141D',                     // position strip, opaque
-    stripSep: 'rgba(255,255,255,0.075)',  // luma 38 on 20
-    red: '#F12116',                       // P1 box (INT); also used for the red flag bar
-    code: '#F5F5F9', num: '#E9EAEF', pos: '#EAEBF0', label: '#E9EAEF',
-    tyre: { S: '#CD535A', M: '#DAC668', H: '#EDEDED', I: '#6AAC64', W: '#4A80A4' },   // H inferred (no reference)
-    pit: ['#EDEDED', '#121315'], pen: ['#B9221E', '#FFFFFF'], inv: ['#BDC936', '#060800'],
-    up: '#26DD09', down: '#D51A2E',
-    hdrTop: 'rgba(54,56,66,0.82)', hdrMid: 'rgba(44,45,56,0.92)', hdrSep: '#1A1D28',
-    separator: '#42414F', band: '#171B26', sess: '#EEEFF3',
-    yellow: '#CFC515', yellowText: '#000000', hazard: '#CFC515', darkBand: '#131119',
-    sc: '#D2C215', redFlagText: '#FFFFFF', stopped: '#E0282E',
-    banner: ['#142237', '#0A1931', '#1F2738'], bannerText: '#F2F4F8',
-    hatch: ['#4A242C', '#1F0001'],
-    na: 'rgba(233,234,239,0.38)',         // unavailable marker
-    me: 'rgba(255,255,255,0.10)',         // player highlight
+    // Polished F1TV broadcast smoked-glass obsidian palette (premium translucency + crisp contrast)
+    panel: [10, 11, 15], panelAlpha: 0.70,
+    strip: 'rgba(6,7,10,0.78)',
+    stripSep: 'rgba(255,255,255,0.09)',
+    red: '#E10600',
+    code: '#F6F7FA', num: '#EEF0F5', pos: '#F0F2F7', label: '#EEF0F5',
+    tyre: { S: '#FF2837', M: '#FFD400', H: '#F5F7FA', I: '#00D86E', W: '#00A8FF' },
+    pit: ['#F4F6FA', '#0A0B0F'], pen: ['#E10600', '#FFFFFF'], inv: ['#FFD400', '#06070A'],
+    up: '#00E676', down: '#FF283C',
+    hdrTop: 'rgba(22,25,34,0.78)', hdrMid: 'rgba(11,12,17,0.80)', hdrSep: 'rgba(6,7,10,0.82)',
+    separator: '#E10600', band: 'rgba(11,12,17,0.76)', sess: '#F4F6FA',
+    yellow: '#FFE01A', yellowBot: '#E6B800', yellowText: '#08090C', hazard: '#FFE01A', darkBand: 'rgba(9,10,14,0.82)',
+    sc: '#FFE01A', scBot: '#E4B400', redFlagBot: '#B20602', redFlagText: '#FFFFFF', stopped: '#FF3636',
+    banner: ['rgba(16,22,36,0.82)', 'rgba(7,10,18,0.84)', 'rgba(27,36,56,0.82)'], bannerText: '#F4F7FC',
+    hatch: ['#58141C', '#180204'],
+    na: 'rgba(235,238,245,0.34)',
+    me: 'rgba(255,255,255,0.14)',
     slot: 'rgba(255,255,255,0.42)', slotText: 'rgba(255,255,255,0.62)',
   };
 
   // ---------------------------------------------------------------- text
 
-  function setFont(ctx, wt, cap) { ctx.font = `${wt} ${(cap / CAP_EM * K).toFixed(2)}px ${FONT}`; }
+  function setFont(ctx, wt, cap, o) {
+    const fam = (o && o.font) || FONT;
+    const st = (o && o.italic) ? 'italic ' : '';
+    ctx.font = `${st}${wt} ${(cap / CAP_EM * K).toFixed(2)}px ${fam}`;
+  }
 
   // Saira's width axis in the steps a canvas can ask for (font-stretch keywords; the font file covers 50-125 %)
   const STRETCH = ['ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed', 'normal', 'semi-expanded', 'expanded'];
   // fit: reach `fit` x the normal-width ink of s with Saira's own axes, not an x-scale: the widest width step
   // whose ink stays within it, then tracking (letter spacing, HUD units) for the rest. Measured at the same weight and
   // size, once per call (sprite export and previews only; nothing here runs in the game).
-  function fitStyle(ctx, s, cap, wt, fit) {
-    ctx.save(); setFont(ctx, wt, cap);
+  function fitStyle(ctx, s, cap, wt, fit, o) {
+    ctx.save(); setFont(ctx, wt, cap, o);
     const n0 = inkOf(ctx, s), want = (n0.l + n0.r) * fit;
     let best = null;
     for (const kw of STRETCH) {
@@ -200,7 +205,7 @@
     if (o.fit) return fitText(ctx, s, x, base, cap, o);
     const sx = o.sx || 1;
     ctx.save();
-    setFont(ctx, o.wt || 400, cap);
+    setFont(ctx, o.wt || 400, cap, o);
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     const m = inkOf(ctx, s), w = (m.l + m.r) * sx;
     const x0 = o.align === 'right' ? x - w : o.align === 'center' ? x - w / 2 : x;
@@ -212,11 +217,11 @@
     return w;
   }
 
-  // text() with o.fit: Saira's width step and tracking from fitStyle, the ink aligned as text() aligns it
+  // text() with o.fit: width step and tracking from fitStyle, the ink aligned as text() aligns it
   function fitText(ctx, s, x, base, cap, o) {
-    const f = fitStyle(ctx, s, cap, o.wt || 400, o.fit), w = f.w;
+    const f = fitStyle(ctx, s, cap, o.wt || 400, o.fit, o), w = f.w;
     ctx.save();
-    setFont(ctx, o.wt || 400, cap); ctx.fontStretch = f.stretch; ctx.letterSpacing = `${(f.ls * K).toFixed(3)}px`;
+    setFont(ctx, o.wt || 400, cap, o); ctx.fontStretch = f.stretch; ctx.letterSpacing = `${(f.ls * K).toFixed(3)}px`;
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     const x0 = o.align === 'right' ? x - w : o.align === 'center' ? x - w / 2 : x;
     ctx.translate(x0, base); ctx.scale(1 / K, 1 / K);

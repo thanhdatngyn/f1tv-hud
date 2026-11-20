@@ -119,9 +119,19 @@
     };
     const gDot = (g, red) => { const L = digitLayout(g); I.gChar(g, '.', L.dot, red); };
 
+    const baseFrame = g => {
+      I.drawBandMask(g);
+      g.save(); g.scale(CS, CS);
+      g.beginPath(); g.arc(0, 0, G.disc.light + 0.4, 0, 2 * Math.PI); g.fillStyle = '#000'; g.fill();
+      g.restore();
+    };
+    const origCapFrame = left => g => {
+      I.poly(g, I.origCapsuleMask(left)); g.fillStyle = '#000'; g.fill();
+      g.strokeStyle = '#000'; g.lineWidth = 2.2; g.stroke();
+    };
     // [name, draw, options]: drawn only when asked for (?only=), one canvas each
     const specs = [
-      ['base', g => { outer(g); g.save(); g.scale(CS, CS); centreBase(g); g.restore(); }],
+      ['base', g => { outer(g); g.save(); g.scale(CS, CS); centreBase(g); g.restore(); }, { frame: baseFrame }],
       ['rails', g => I.drawRails(g, '#FFFFFF')],
       ['arrow_l', g => I.drawTurnArrow(g, false)],
       ['arrow_r', g => I.drawTurnArrow(g, true)],
@@ -130,8 +140,8 @@
       ['aero_lbl_w', g => I.drawAeroLabel(g, P.white)],
       ['aero_eq_w', g => I.drawAeroBars(g, true, P.aeroBar)],
       ['aero_sl', g => I.drawAeroBars(g, false, P.aeroBar)],
-      ['cap_l_on', g => I.drawCapsule(g, true, 1, 'RECHARGE'), { centre: true }],
-      ['cap_r_on', g => I.drawCapsule(g, false, 1, 'DEPLOY'), { centre: true }],
+      ['cap_l_on', g => I.drawCapsule(g, true, 1, 'RECHARGE'), { centre: true, frame: origCapFrame(true) }],
+      ['cap_r_on', g => I.drawCapsule(g, false, 1, 'DEPLOY'), { centre: true, frame: origCapFrame(false) }],
       ...[...Array(G.stripes.n).keys()].flatMap(i => [
         ['str_l_' + i, g => litSlat(g, true, i, P.brake, P.brakeTop), { centre: true }],
         ['str_r_' + i, g => litSlat(g, false, i, P.throttle, P.throttleTop), { centre: true }]]),
@@ -155,7 +165,7 @@
       ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => ['gear_' + i, g => I.drawGearDigit(g, i, true)]),
       // G-force meter (optional): its base, the label lit or dimmed, 8 segments, 4 white and 4 red bars, and the
       // value's digits per place (units u, tenths t) and the point, in white and red
-      ['base_g', g => { outer(g); g.save(); g.scale(CS, CS); centreBaseG(g); g.restore(); }],
+      ['base_g', g => { outer(g); g.save(); g.scale(CS, CS); centreBaseG(g); g.restore(); }, { frame: baseFrame }],
       ['g_lbl', g => I.drawGLabel(g, false), { centre: true }],
       ['g_lbl_dim', g => I.drawGLabel(g, true), { centre: true }],
       ...[...Array(8).keys()].map(k => ['g_seg_' + k, g => I.gSector(g, GM.arc.r0, GM.arc.r1, k * GM.arc.seg, GM.arc.seg / 2 + SEG_OVERLAP, P.gCyan), { centre: true }]),
@@ -176,7 +186,7 @@
       ['ers_none', g => I.drawErsMode(g, 0), { centre: true }],
       ['ers_medium', g => I.drawErsMode(g, 1), { centre: true }],
       ['ers_hotlap', g => I.drawErsMode(g, 2), { centre: true }],
-      ['base_f2', g => { outer(g); g.save(); g.scale(CS, CS); centreBaseF2(g); g.restore(); }],
+      ['base_f2', g => { outer(g); g.save(); g.scale(CS, CS); centreBaseF2(g); g.restore(); }, { frame: baseFrame }],
       // animations: each active-aero bar on its own, in its "=" pose (e) and its "//" pose (s),
       // from the same drawing and on the same crop as aero_eq_w / aero_sl (the two bars together are that sprite); and the band's top edge on each wing as an alpha shape, the
       // mask the Overtake / Boost streak runs under (white: the streak's quad gives the colour)
@@ -190,6 +200,9 @@
       // it (amber): the digit in the hint colour with its glow, and the pointer triangle
       ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => ['sg_up_' + i, g => I.drawGearSuggest(g, i, true)]),
       ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => ['sg_dn_' + i, g => I.drawGearSuggest(g, i, false)]),
+      // Speed-dial dynamic RPM bezel shift-light segments (12 progressive + max-RPM shift flash)
+      ...[...Array(12).keys()].map(i => ['rb_' + String(i + 1).padStart(2, '0'), g => I.drawRpmBezelSeg(g, i), { centre: true }]),
+      ['rb_max', g => I.drawRpmBezelMax(g), { centre: true }],
     ];
 
     const names = specs.map(s => s[0]);
